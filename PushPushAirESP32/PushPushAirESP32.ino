@@ -1,8 +1,3 @@
-#include <BleKeyboard.h>
-BleKeyboard bleKeyboard;
-
-#include <Bounce2.h>
-
 /**
  * for 18650 battery level check
  * see: https://www.pangodream.es/esp32-getting-battery-charging-level
@@ -16,16 +11,24 @@ BleKeyboard bleKeyboard;
 #include <Pangodream_18650_CL.h>
 Pangodream_18650_CL BL;
 
-//Pulsanti
+#include <BleKeyboard.h>
+//BleKeyboard bleKeyboard;
+BleKeyboard bleKeyboard("PushPush AIR", "UBI Stage", 100);
+
+#include <Bounce2.h>
+
+
+
+// Pin per i Pulsanti
 const byte PEDALNEXT_PIN = 21;
 const byte PEDALPREV_PIN = 23;
 
-//Led
+// Led
 const byte PEDALNEXT_LED = LED_BUILTIN;
 const byte PEDALPREV_LED = LED_BUILTIN;
 const byte STATUS_LED = LED_BUILTIN;
 
-//Tasti da emulare
+// Tasti da emulare
 const byte PEDALNEXT_KEY = KEY_RIGHT_ARROW;
 const byte PEDALPREV_KEY = KEY_LEFT_ARROW;
 
@@ -38,11 +41,13 @@ Bounce ped_next = Bounce();
 // Instantiate another Bounce object
 Bounce ped_prev = Bounce(); 
 
+// Chek the battery status every BAT_POLLING_INTERVAL milliseconds
 unsigned long batCheckTime;
 const int BAT_POLLING_INTERVAL = 5000;
 
 unsigned long btnReadingSettle;
 
+// Manage the status led (it will blink faster as the battery level will go down)
 int status_led_off_interval;
 int status_led_on_interval;
 unsigned long status_led_change_time;
