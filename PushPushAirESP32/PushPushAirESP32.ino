@@ -13,7 +13,7 @@ Pangodream_18650_CL BL;
 
 #include <BleKeyboard.h>
 //BleKeyboard bleKeyboard;
-BleKeyboard bleKeyboard("PushPush AIR", "UBI Stage", 100);
+BleKeyboard bleKeyboard("PushPush AIR", "UBI Stage", BL.getBatteryChargeLevel());
 
 #include <Bounce2.h>
 
@@ -151,6 +151,7 @@ void loop(void)
     Serial.println(BL.getBatteryChargeLevel());
     Serial.println("");
     status_led_off_interval = 100 * BL.getBatteryChargeLevel();
+    bleKeyboard.setBatteryLevel(BL.getBatteryChargeLevel());
   }
 
 }
