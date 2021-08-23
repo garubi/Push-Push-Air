@@ -25,8 +25,8 @@ const byte PEDALNEXT_PIN = 21;
 const byte PEDALPREV_PIN = 23;
 
 //Led
-const byte PEDALNEXT_LED = 9;
-const byte PEDALPREV_LED = 8;
+const byte PEDALNEXT_LED = LED_BUILTIN;
+const byte PEDALPREV_LED = LED_BUILTIN;
 
 //Tasti da emulare
 const byte PEDALNEXT_KEY = KEY_RIGHT_ARROW;
