@@ -1,6 +1,3 @@
- 
-#include "Keyboard.h"
-
 #include <BleKeyboard.h>
 BleKeyboard bleKeyboard;
 
@@ -44,7 +41,6 @@ Bounce ped_prev = Bounce();
 static void SendKey( byte pedal ){
   switch( pedal ){
     case PED_NEXT:
-      Keyboard.press(PEDALNEXT_KEY);
       if (bleKeyboard.isConnected()) {
         bleKeyboard.press(PEDALNEXT_KEY);
         delay (100);
@@ -52,7 +48,6 @@ static void SendKey( byte pedal ){
       }
     break; 
     case PED_PREV:
-      Keyboard.press(PEDALPREV_KEY);
       if (bleKeyboard.isConnected()) {
         bleKeyboard.press(PEDALPREV_KEY);
         delay (100);
@@ -62,12 +57,10 @@ static void SendKey( byte pedal ){
   }
   Serial.println(pedal);
   delay(100);
-  Keyboard.releaseAll();
 }
 
 void setup(void)
 {
-    Keyboard.begin();
     bleKeyboard.begin();
     
     // BUTTONS / INPUTS
