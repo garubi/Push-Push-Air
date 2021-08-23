@@ -1,32 +1,85 @@
-#include <BleKeyboard.h>
-/**
- * see: https://www.pangodream.es/esp32-getting-battery-charging-level
- */
-#include <Pangodream_18650_CL.h>
-
-//#define ADC_PIN 34
-//#define CONV_FACTOR 1.7
-//#define READS 20
-
-Pangodream_18650_CL BL;
-/**
- * If you need to change default values you can use it as
- * Pangodream_18650_CL BL(ADC_PIN, CONV_FACTOR, READS);
- */
  
-#define RIGHT_BTN 21
-#define LEFT_BTN 23
+#include "Keyboard.h"
 
-#define RIGHT_BTN_CODE KEY_RIGHT_ARROW
-#define LEFT_BTN_CODE KEY_LEFT_ARROW
-
+#include <BleKeyboard.h>
 BleKeyboard bleKeyboard;
 
-void setup() {
-  bleKeyboard.begin();
-  
-  pinMode(LEFT_BTN, INPUT_PULLUP);
-  pinMode(RIGHT_BTN, INPUT_PULLUP);
+#include <Bounce2.h>
+
+/**
+ * for 18650 battery level check
+ * see: https://www.pangodream.es/esp32-getting-battery-charging-level
+ *  
+ * If you need to change default values you can use it as
+ * Pangodream_18650_CL BL(ADC_PIN, CONV_FACTOR, READS);
+ * #define ADC_PIN 34
+ * #define CONV_FACTOR 1.7
+ * #define READS 20
+ */
+#include <Pangodream_18650_CL.h>
+Pangodream_18650_CL BL;
+
+
+//Pulsanti
+const byte PEDALNEXT_PIN = 21;
+const byte PEDALPREV_PIN = 23;
+
+//Led
+const byte PEDALNEXT_LED = 9;
+const byte PEDALPREV_LED = 8;
+
+//Tasti da emulare
+const byte PEDALNEXT_KEY = KEY_RIGHT_ARROW;
+const byte PEDALPREV_KEY = KEY_LEFT_ARROW;
+
+
+const byte PED_NEXT = PEDALNEXT_PIN;
+const byte PED_PREV = PEDALPREV_PIN;
+
+// Instantiate a Bounce object
+Bounce ped_next = Bounce(); 
+// Instantiate another Bounce object
+Bounce ped_prev = Bounce(); 
+
+static void SendKey( byte pedal ){
+  switch( pedal ){
+    case PED_NEXT:
+      Keyboard.press(PEDALNEXT_KEY);
+      if (bleKeyboard.isConnected()) {
+        bleKeyboard.press(PEDALNEXT_KEY);
+        delay (100);
+        bleKeyboard.releaseAll();
+      }
+    break; 
+    case PED_PREV:
+      Keyboard.press(PEDALPREV_KEY);
+      if (bleKeyboard.isConnected()) {
+        bleKeyboard.press(PEDALPREV_KEY);
+        delay (100);
+        bleKeyboard.releaseAll();
+      }      
+    break; 
+  }
+  Serial.println(pedal);
+  delay(100);
+  Keyboard.releaseAll();
+}
+
+void setup(void)
+{
+    Keyboard.begin();
+    bleKeyboard.begin();
+    
+    // BUTTONS / INPUTS
+    pinMode(PEDALNEXT_PIN, INPUT_PULLUP);
+    pinMode(PEDALPREV_PIN, INPUT_PULLUP);
+    
+    ped_next.attach(PEDALNEXT_PIN);
+    ped_prev.attach(PEDALPREV_PIN);
+
+    // OUTPUTS /LEDS
+    pinMode(PEDALNEXT_LED, OUTPUT);
+    pinMode(PEDALPREV_LED, OUTPUT);
 
     Serial.begin(115200);
 //    Serial.setDebugOutput(true);
@@ -34,19 +87,42 @@ void setup() {
 //    Serial.println(ESP.getSdkVersion());
 }
 
-void loop() {
-  if (bleKeyboard.isConnected() && !digitalRead(RIGHT_BTN)) {
-    bleKeyboard.press(RIGHT_BTN_CODE);
-    Serial.println(RIGHT_BTN);
-    delay (100);
-    bleKeyboard.releaseAll();
-  }
-  if (bleKeyboard.isConnected() && !digitalRead(LEFT_BTN)) {
-    bleKeyboard.press(LEFT_BTN_CODE);
-    delay (100);
-    Serial.println(LEFT_BTN);
-    bleKeyboard.releaseAll();
-  }
+void loop(void)
+{
+    static uint8_t pedalNEXTStateLast = 0;
+    static uint8_t pedalPREVStateLast = 0;
+    uint8_t pedalState;
+    ped_next.update();
+    ped_prev.update();
+  
+    pedalState = ped_next.read();
+    if (pedalState != pedalNEXTStateLast) {
+        pedalNEXTStateLast = pedalState;
+
+        if (pedalState == LOW ) {
+            SendKey( PED_NEXT );
+            digitalWrite(PEDALNEXT_LED, HIGH );
+        }
+        else{
+            digitalWrite(PEDALNEXT_LED, LOW );
+        }
+    }
+
+    pedalState = ped_prev.read();
+    if (pedalState != pedalPREVStateLast) {
+        pedalPREVStateLast = pedalState;
+
+        if (pedalState == LOW ) {
+            SendKey( PED_PREV );
+            digitalWrite(PEDALPREV_LED, HIGH );
+        }
+        else{
+            digitalWrite(PEDALPREV_LED, LOW );
+        }
+    }
+
+    delay(50);
+
   Serial.print("Value from pin: ");
   Serial.println(analogRead(34));
   Serial.print("Average value from pin: ");
@@ -56,7 +132,5 @@ void loop() {
   Serial.print("Charge level: ");
   Serial.println(BL.getBatteryChargeLevel());
   Serial.println("");
-
-  if
   delay(1000);
 }
