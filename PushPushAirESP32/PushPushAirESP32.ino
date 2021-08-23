@@ -23,6 +23,7 @@ const byte PEDALPREV_PIN = 23;
 //Led
 const byte PEDALNEXT_LED = LED_BUILTIN;
 const byte PEDALPREV_LED = LED_BUILTIN;
+const byte STATUS_LED = LED_BUILTIN;
 
 //Tasti da emulare
 const byte PEDALNEXT_KEY = KEY_RIGHT_ARROW;
@@ -42,6 +43,11 @@ const int BAT_POLLING_INTERVAL = 5000;
 
 unsigned long btnReadingSettle;
 
+int status_led_off_interval;
+int status_led_on_interval;
+unsigned long status_led_change_time;
+byte status_led_flag;
+
 static void SendKey( byte pedal ){
   if (bleKeyboard.isConnected()) {
     switch( pedal ){
@@ -54,8 +60,8 @@ static void SendKey( byte pedal ){
     }
     
     Serial.println(pedal);
-//    delay(100);
-//    bleKeyboard.releaseAll();
+    delay(100);
+    bleKeyboard.releaseAll();
   }
 }
 
@@ -73,19 +79,36 @@ void setup(void)
     // OUTPUTS /LEDS
     pinMode(PEDALNEXT_LED, OUTPUT);
     pinMode(PEDALPREV_LED, OUTPUT);
-
+    pinMode(STATUS_LED, OUTPUT);
+    
     Serial.begin(115200);
 //    Serial.setDebugOutput(true);
 //    Serial.print("ESP32 SDK: ");
 //    Serial.println(ESP.getSdkVersion());
+
+    status_led_off_interval = 100 * BL.getBatteryChargeLevel();
+    status_led_on_interval = 200;
+    status_led_flag = LOW;
 }
 
 void loop(void)
 {
-    if( btnReadingSettle + 50 < millis() ){
-      btnReadingSettle = millis();
-      static uint8_t pedalNEXTStateLast = 0;
-      static uint8_t pedalPREVStateLast = 0;
+
+    if(status_led_flag == HIGH && millis() > status_led_change_time ){
+      status_led_change_time = millis() + status_led_on_interval;
+      status_led_flag = LOW;
+      digitalWrite(STATUS_LED, status_led_flag );
+    }
+    if(status_led_flag == LOW && millis() > status_led_change_time ){
+      status_led_change_time = millis() + status_led_off_interval;
+      status_led_flag = HIGH;
+      digitalWrite(STATUS_LED, status_led_flag );
+    }
+
+    if(  millis() > btnReadingSettle ){
+      btnReadingSettle = millis() + 50;
+      static uint8_t pedalNEXTStateLast = HIGH;
+      static uint8_t pedalPREVStateLast = HIGH;
       uint8_t pedalState;
       ped_next.update();
       ped_prev.update();
@@ -111,18 +134,18 @@ void loop(void)
       }
     }
 
-  if( batCheckTime + BAT_POLLING_INTERVAL < millis() ){
-    batCheckTime = millis();
-  Serial.print("Value from pin: ");
-  Serial.println(analogRead(34));
-  Serial.print("Average value from pin: ");
-  Serial.println(BL.pinRead());
-  Serial.print("Volts: ");
-  Serial.println(BL.getBatteryVolts());
-  Serial.print("Charge level: ");
-  Serial.println(BL.getBatteryChargeLevel());
-  Serial.println("");
-  // delay(1000);
+  if(  millis() > batCheckTime ){
+    batCheckTime = millis() + BAT_POLLING_INTERVAL;
+    Serial.print("Value from pin: ");
+    Serial.println(analogRead(34));
+    Serial.print("Average value from pin: ");
+    Serial.println(BL.pinRead());
+    Serial.print("Volts: ");
+    Serial.println(BL.getBatteryVolts());
+    Serial.print("Charge level: ");
+    Serial.println(BL.getBatteryChargeLevel());
+    Serial.println("");
+    status_led_off_interval = 100 * BL.getBatteryChargeLevel();
   }
 
 }
