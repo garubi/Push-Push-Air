@@ -16,7 +16,6 @@ BleKeyboard bleKeyboard;
 #include <Pangodream_18650_CL.h>
 Pangodream_18650_CL BL;
 
-
 //Pulsanti
 const byte PEDALNEXT_PIN = 21;
 const byte PEDALPREV_PIN = 23;
@@ -39,24 +38,20 @@ Bounce ped_next = Bounce();
 Bounce ped_prev = Bounce(); 
 
 static void SendKey( byte pedal ){
-  switch( pedal ){
-    case PED_NEXT:
-      if (bleKeyboard.isConnected()) {
-        bleKeyboard.press(PEDALNEXT_KEY);
-        delay (100);
-        bleKeyboard.releaseAll();
-      }
-    break; 
-    case PED_PREV:
-      if (bleKeyboard.isConnected()) {
-        bleKeyboard.press(PEDALPREV_KEY);
-        delay (100);
-        bleKeyboard.releaseAll();
-      }      
-    break; 
+  if (bleKeyboard.isConnected()) {
+    switch( pedal ){
+      case PED_NEXT:
+          bleKeyboard.press(PEDALNEXT_KEY);
+      break; 
+      case PED_PREV:
+          bleKeyboard.press(PEDALPREV_KEY);
+      break; 
+    }
+    
+    Serial.println(pedal);
+    delay(100);
+    bleKeyboard.releaseAll();
   }
-  Serial.println(pedal);
-  delay(100);
 }
 
 void setup(void)
@@ -94,11 +89,8 @@ void loop(void)
 
         if (pedalState == LOW ) {
             SendKey( PED_NEXT );
-            digitalWrite(PEDALNEXT_LED, HIGH );
         }
-        else{
-            digitalWrite(PEDALNEXT_LED, LOW );
-        }
+        digitalWrite(PEDALNEXT_LED, pedalState );
     }
 
     pedalState = ped_prev.read();
@@ -107,11 +99,8 @@ void loop(void)
 
         if (pedalState == LOW ) {
             SendKey( PED_PREV );
-            digitalWrite(PEDALPREV_LED, HIGH );
         }
-        else{
-            digitalWrite(PEDALPREV_LED, LOW );
-        }
+        digitalWrite(PEDALPREV_LED, pedalState );
     }
 
     delay(50);
