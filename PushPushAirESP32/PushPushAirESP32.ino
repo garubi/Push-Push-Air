@@ -37,6 +37,11 @@ Bounce ped_next = Bounce();
 // Instantiate another Bounce object
 Bounce ped_prev = Bounce(); 
 
+unsigned long batCheckTime;
+const int BAT_POLLING_INTERVAL = 5000;
+
+unsigned long btnReadingSettle;
+
 static void SendKey( byte pedal ){
   if (bleKeyboard.isConnected()) {
     switch( pedal ){
@@ -49,8 +54,8 @@ static void SendKey( byte pedal ){
     }
     
     Serial.println(pedal);
-    delay(100);
-    bleKeyboard.releaseAll();
+//    delay(100);
+//    bleKeyboard.releaseAll();
   }
 }
 
@@ -77,34 +82,37 @@ void setup(void)
 
 void loop(void)
 {
-    static uint8_t pedalNEXTStateLast = 0;
-    static uint8_t pedalPREVStateLast = 0;
-    uint8_t pedalState;
-    ped_next.update();
-    ped_prev.update();
+    if( btnReadingSettle + 50 < millis() ){
+      btnReadingSettle = millis();
+      static uint8_t pedalNEXTStateLast = 0;
+      static uint8_t pedalPREVStateLast = 0;
+      uint8_t pedalState;
+      ped_next.update();
+      ped_prev.update();
+    
+      pedalState = ped_next.read();
+      if (pedalState != pedalNEXTStateLast) {
+          pedalNEXTStateLast = pedalState;
   
-    pedalState = ped_next.read();
-    if (pedalState != pedalNEXTStateLast) {
-        pedalNEXTStateLast = pedalState;
-
-        if (pedalState == LOW ) {
-            SendKey( PED_NEXT );
-        }
-        digitalWrite(PEDALNEXT_LED, pedalState );
+          if (pedalState == LOW ) {
+              SendKey( PED_NEXT );
+          }
+          digitalWrite(PEDALNEXT_LED, pedalState );
+      }
+  
+      pedalState = ped_prev.read();
+      if (pedalState != pedalPREVStateLast) {
+          pedalPREVStateLast = pedalState;
+  
+          if (pedalState == LOW ) {
+              SendKey( PED_PREV );
+          }
+          digitalWrite(PEDALPREV_LED, pedalState );
+      }
     }
 
-    pedalState = ped_prev.read();
-    if (pedalState != pedalPREVStateLast) {
-        pedalPREVStateLast = pedalState;
-
-        if (pedalState == LOW ) {
-            SendKey( PED_PREV );
-        }
-        digitalWrite(PEDALPREV_LED, pedalState );
-    }
-
-    delay(50);
-
+  if( batCheckTime + BAT_POLLING_INTERVAL < millis() ){
+    batCheckTime = millis();
   Serial.print("Value from pin: ");
   Serial.println(analogRead(34));
   Serial.print("Average value from pin: ");
@@ -114,5 +122,7 @@ void loop(void)
   Serial.print("Charge level: ");
   Serial.println(BL.getBatteryChargeLevel());
   Serial.println("");
-  delay(1000);
+  // delay(1000);
+  }
+
 }
