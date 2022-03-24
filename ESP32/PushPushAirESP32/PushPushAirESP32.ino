@@ -1,3 +1,19 @@
+#include <IotWebConf.h>
+
+// -- Initial name of the Thing. Used e.g. as SSID of the own Access Point.
+const char thingName[] = "PushPush AIR";
+
+// -- Initial password to connect to the Thing, when it creates an own Access Point.
+const char wifiInitialApPassword[] = "12345678";
+
+// -- Method declarations.
+void handleRoot();
+
+DNSServer dnsServer;
+WebServer server(80);
+
+IotWebConf iotWebConf(thingName, &dnsServer, &server, wifiInitialApPassword);
+
 /**
  * for 18650 battery level check
  * see: https://www.pangodream.es/esp32-getting-battery-charging-level
@@ -94,6 +110,18 @@ void setup(void)
     status_led_off_interval = 100 * BL.getBatteryChargeLevel();
     status_led_on_interval = 200;
     status_led_flag = LOW;
+
+    Serial.println("Starting up...");
+  
+    // -- Initializing the configuration.
+    iotWebConf.init();
+  
+    // -- Set up required URL handlers on the web server.
+    server.on("/", handleRoot);
+    server.on("/config", []{ iotWebConf.handleConfig(); });
+    server.onNotFound([](){ iotWebConf.handleNotFound(); });
+  
+    Serial.println("Ready.");
 }
 
 void loop(void)
@@ -141,17 +169,38 @@ void loop(void)
 
   if(  millis() > batCheckTime ){
     batCheckTime = millis() + BAT_POLLING_INTERVAL;
-    Serial.print("Value from pin: ");
-    Serial.println(analogRead(34));
-    Serial.print("Average value from pin: ");
-    Serial.println(BL.pinRead());
-    Serial.print("Volts: ");
-    Serial.println(BL.getBatteryVolts());
-    Serial.print("Charge level: ");
-    Serial.println(BL.getBatteryChargeLevel());
-    Serial.println("");
+//    Serial.print("Value from pin: ");
+//    Serial.println(analogRead(34));
+//    Serial.print("Average value from pin: ");
+//    Serial.println(BL.pinRead());
+//    Serial.print("Volts: ");
+//    Serial.println(BL.getBatteryVolts());
+//    Serial.print("Charge level: ");
+//    Serial.println(BL.getBatteryChargeLevel());
+//    Serial.println("");
     status_led_off_interval = 100 * BL.getBatteryChargeLevel();
     bleKeyboard.setBatteryLevel(BL.getBatteryChargeLevel());
   }
+  
+ // -- doLoop should be called as frequently as possible.
+  iotWebConf.doLoop();
+}
 
+/**
+ * Handle web requests to "/" path.
+ */
+void handleRoot()
+{
+  // -- Let IotWebConf test and handle captive portal requests.
+  if (iotWebConf.handleCaptivePortal())
+  {
+    // -- Captive portal request were already served.
+    return;
+  }
+  String s = "<!DOCTYPE html><html lang=\"en\"><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>";
+  s += "<title>IotWebConf Minimal</title></head><body>";
+  s += "Go to <a href='config'>configure </a> to change settings.";
+  s += "</body></html>\n";
+
+  server.send(200, "text/html", s);
 }
