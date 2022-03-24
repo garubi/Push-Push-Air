@@ -1,4 +1,5 @@
 #include <IotWebConf.h>
+#include <IotWebConfUsing.h> // This loads aliases for easier class names.
 
 // -- Initial name of the Thing. Used e.g. as SSID of the own Access Point.
 const char thingName[] = "PushPush AIR";
@@ -6,13 +7,49 @@ const char thingName[] = "PushPush AIR";
 // -- Initial password to connect to the Thing, when it creates an own Access Point.
 const char wifiInitialApPassword[] = "12345678";
 
+#define STRING_LEN 128
+#define NUMBER_LEN 32
+
+// -- Configuration specific key. The value should be modified if config structure was changed.
+#define CONFIG_VERSION "beta1"
+
+// -- When CONFIG_PIN is pulled to ground on startup, the Thing will use the initial
+//      password to buld an AP. (E.g. in case of lost password)
+#define CONFIG_PIN 22
+
+// -- Status indicator pin.
+//      First it will light up (kept LOW), on Wifi connection it will blink,
+//      when connected to the Wifi it will turn off (kept HIGH).
+#define STATUS_PIN LED_BUILTIN
+
 // -- Method declarations.
 void handleRoot();
+// -- Callback methods.
+void configSaved();
+bool formValidator(iotwebconf::WebRequestWrapper* webRequestWrapper);
 
 DNSServer dnsServer;
 WebServer server(80);
 
-IotWebConf iotWebConf(thingName, &dnsServer, &server, wifiInitialApPassword);
+char stringParamValue[STRING_LEN];
+char intParamValue[NUMBER_LEN];
+char floatParamValue[NUMBER_LEN];
+char checkboxParamValue[STRING_LEN];
+char chooserParamValue[STRING_LEN];
+
+static char chooserValues[][STRING_LEN] = { "red", "blue", "darkYellow" };
+static char chooserNames[][STRING_LEN] = { "Red", "Blue", "Dark yellow" };
+
+IotWebConf iotWebConf(thingName, &dnsServer, &server, wifiInitialApPassword, CONFIG_VERSION);
+// -- You can also use namespace formats e.g.: iotwebconf::TextParameter
+IotWebConfTextParameter stringParam = IotWebConfTextParameter("String param", "stringParam", stringParamValue, STRING_LEN);
+IotWebConfParameterGroup group1 = IotWebConfParameterGroup("group1", "");
+IotWebConfNumberParameter intParam = IotWebConfNumberParameter("Int param", "intParam", intParamValue, NUMBER_LEN, "20", "1..100", "min='1' max='100' step='1'");
+// -- We can add a legend to the separator
+IotWebConfParameterGroup group2 = IotWebConfParameterGroup("c_factor", "Calibration factor");
+IotWebConfNumberParameter floatParam = IotWebConfNumberParameter("Float param", "floatParam", floatParamValue, NUMBER_LEN,  nullptr, "e.g. 23.4", "step='0.1'");
+IotWebConfCheckboxParameter checkboxParam = IotWebConfCheckboxParameter("Check param", "checkParam", checkboxParamValue, STRING_LEN,  true);
+IotWebConfSelectParameter chooserParam = IotWebConfSelectParameter("Choose param", "chooseParam", chooserParamValue, STRING_LEN, (char*)chooserValues, (char*)chooserNames, sizeof(chooserValues) / STRING_LEN, STRING_LEN);
 
 /**
  * for 18650 battery level check
@@ -112,7 +149,19 @@ void setup(void)
     status_led_flag = LOW;
 
     Serial.println("Starting up...");
-  
+  group1.addItem(&intParam);
+  group2.addItem(&floatParam);
+  group2.addItem(&checkboxParam);
+  group2.addItem(&chooserParam);
+
+  iotWebConf.setStatusPin(STATUS_PIN);
+  iotWebConf.setConfigPin(CONFIG_PIN);
+  iotWebConf.addSystemParameter(&stringParam);
+  iotWebConf.addParameterGroup(&group1);
+  iotWebConf.addParameterGroup(&group2);
+  iotWebConf.setConfigSavedCallback(&configSaved);
+  iotWebConf.setFormValidator(&formValidator);
+  iotWebConf.getApTimeoutParameter()->visible = true;
     // -- Initializing the configuration.
     iotWebConf.init();
   
@@ -198,9 +247,42 @@ void handleRoot()
     return;
   }
   String s = "<!DOCTYPE html><html lang=\"en\"><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>";
-  s += "<title>IotWebConf Minimal</title></head><body>";
-  s += "Go to <a href='config'>configure </a> to change settings.";
+  s += "<title>IotWebConf 03 Custom Parameters</title></head><body>Hello world!";
+  s += "<ul>";
+  s += "<li>String param value: ";
+  s += stringParamValue;
+  s += "<li>Int param value: ";
+  s += atoi(intParamValue);
+  s += "<li>Float param value: ";
+  s += atof(floatParamValue);
+  s += "<li>CheckBox selected: ";
+//  s += checkboxParam.isChecked();
+  s += "<li>Option selected: ";
+  s += chooserParamValue;
+  s += "</ul>";
+  s += "Go to <a href='config'>configure page</a> to change values.";
   s += "</body></html>\n";
 
   server.send(200, "text/html", s);
+}
+
+void configSaved()
+{
+  Serial.println("Configuration was updated.");
+}
+
+bool formValidator(iotwebconf::WebRequestWrapper* webRequestWrapper)
+{
+  Serial.println("Validating form.");
+  bool valid = true;
+
+/*
+  int l = webRequestWrapper->arg(stringParam.getId()).length();
+  if (l < 3)
+  {
+    stringParam.errorMessage = "Please provide at least 3 characters for this test!";
+    valid = false;
+  }
+*/
+  return valid;
 }
