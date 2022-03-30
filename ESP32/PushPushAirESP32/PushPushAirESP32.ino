@@ -23,6 +23,25 @@ BleKeyboard bleKeyboard("PushPush AIR", "UBI Stage", BL.getBatteryChargeLevel())
 
 AsyncWebServer server(80);
 
+struct Key_options {
+    String label; //char can also be a fixed length string like char fruit[16];
+    uint8_t value;
+} key_options[] = {
+    {"KEY_UP_ARROW" , KEY_UP_ARROW},
+    {"KEY_DOWN_ARROW" , KEY_DOWN_ARROW},
+    {"KEY_LEFT_ARROW" , KEY_LEFT_ARROW},
+    {"KEY_RIGHT_ARROW" , KEY_RIGHT_ARROW},
+    {"KEY_BACKSPACE" , KEY_BACKSPACE},
+    {"KEY_RETURN" , KEY_RETURN},
+    {"KEY_ESC" , KEY_ESC},
+    {"KEY_DELETE" , KEY_DELETE},
+    {"KEY_PAGE_UP" , KEY_PAGE_UP},
+    {"KEY_PAGE_DOWN" , KEY_PAGE_DOWN},
+    {"KEY_HOME" , KEY_HOME},
+    {"KEY_END" , KEY_END},
+};
+
+const int key_options_num = sizeof(key_options) / sizeof(key_options[0]);
 // Setting network credentials
 const char* ssid = "PushPush AIR b2";
 const char* password = "12345678";
@@ -63,7 +82,7 @@ byte status_led_flag;
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html>
 <head>
-  <title>ESP32 WEB SERVER</title>
+  <title>PushPush AIR Configuration v1</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="data:,">
   <style>
@@ -79,9 +98,12 @@ const char index_html[] PROGMEM = R"rawliteral(
   </style>
 </head>
 <body>
-  <h2>ESP32 WEB SERVER</h2>
+  <h2>PushPush AIR Configuration v10</h2>
+  <form action="/save">
   %SELECT_PLACEHODER%
-  %BUTTONPLACEHOLDER%
+  <br>
+  <button type="submit">Save</button>
+  </form>
 <script>function toggleCheckbox(element) {
   var xhr = new XMLHttpRequest();
   if(element.checked){ xhr.open("GET", "/update?output="+element.id+"&state=1", true); }
@@ -95,40 +117,33 @@ const char index_html[] PROGMEM = R"rawliteral(
 
 // Replaces placeholder with button section in your web page
 String processor(const String& var){
-  //Serial.println(var);
-  if(var == "BUTTONPLACEHOLDER"){
-    String buttons = "";
-    buttons += "<h4>Output - GPIO 32</h4><label class=\"switch\"><input type=\"checkbox\" onchange=\"toggleCheckbox(this)\" id=\"32\" " + outputState(32) + "><span class=\"slider\"></span></label>";
-
-    buttons += "<h4>Output - GPIO 25</h4><label class=\"switch\"><input type=\"checkbox\" onchange=\"toggleCheckbox(this)\" id=\"25\" " + outputState(25) + "><span class=\"slider\"></span></label>";
-
-    buttons += "<h4>Output - GPIO 27</h4><label class=\"switch\"><input type=\"checkbox\" onchange=\"toggleCheckbox(this)\" id=\"27\" " + outputState(27) + "><span class=\"slider\"></span></label>";
-
-    buttons += "<h4>Output - GPIO 13</h4><label class=\"switch\"><input type=\"checkbox\" onchange=\"toggleCheckbox(this)\" id=\"13\" " + outputState(13) + "><span class=\"slider\"></span></label>";
-
-    return buttons;
-  }
   if(var == "SELECT_PLACEHODER"){
     String buttons = "";
     buttons += "<b>Battery level:</b>";
+    buttons.concat(BL.getBatteryChargeLevel());
     
-    buttons += "<h4>Pedal 1</h4><select><option>Select...</option></select>";
-
-    buttons += "<h4>Pedal 2</h4><select><option>Select...</option></select>";
+    buttons += "<h4>Device Name:</h4><input name=\"devicename\" type=\"text\">";
+    
+    buttons += "<h4>Password:</h4><input name=\"password\" type=\"text\">";
+    buttons += "<br><small>If you forget the password you can reset to the default '12345678' by pressing the two pedals while turning on the Push Push Air</small>";
+        
+    buttons += "<h4>Pedal 1:</h4><select name=\"pedal1\">" + optionsList() + "</select>";
+    // 
+    buttons += "<h4>Pedal 2:</h4><select name=\"pedal2\">" + optionsList() + "</select>";
 
     return buttons;
   }
   return String();
 }
 
-String outputState(int output){
-    return "";
-  // if(digitalRead(output)){
-  //   return "checked";
-  // }
-  // else {
-  //   return "";
-  // }
+String optionsList(){
+    String list = "";
+    for(int prs = 0; prs < key_options_num; prs++){
+        list.concat("<option value=\"");
+        list.concat(prs);
+        list.concat("\">" + key_options[prs].label + "</option>");
+    }
+    return list;
 }
 
 static void SendKey( byte pedal ){
@@ -185,6 +200,35 @@ void setup(void)
     // Route for root / web page
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
       request->send_P(200, "text/html", index_html, processor);
+    });
+    
+    server.on("/save", HTTP_GET, [](AsyncWebServerRequest *request){
+        if(request->hasParam("devicename")){
+            String devicename;
+            devicename = request->getParam("devicename")->value();
+            Serial.println("devicename");
+            Serial.println( devicename );
+        }
+        if(request->hasParam("password")){
+            String password;
+            password = request->getParam("password")->value();
+            Serial.println("password");
+            Serial.println( password );
+        }
+        if(request->hasParam("pedal1")){
+            String pedal1;
+            pedal1 = request->getParam("pedal1")->value();
+            Serial.println("pedal1");
+            Serial.println( pedal1 );
+        }
+        if(request->hasParam("pedal2")){
+            String pedal2;
+            pedal2 = request->getParam("pedal2")->value();
+            Serial.println("pedal2");
+            Serial.println( pedal2 );
+        }
+    
+      request->send(200, "text/plain", "Saved!");
     });
     
     // Start server
