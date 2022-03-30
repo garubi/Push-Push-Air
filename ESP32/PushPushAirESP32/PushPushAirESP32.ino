@@ -1,3 +1,8 @@
+#include <Preferences.h>
+
+Preferences preferences;
+
+
 /**
  * for 18650 battery level check
  * see: https://www.pangodream.es/esp32-getting-battery-charging-level
@@ -42,9 +47,9 @@ struct Key_options {
 };
 
 const int key_options_num = sizeof(key_options) / sizeof(key_options[0]);
-// Setting network credentials
-const char* ssid = "PushPush AIR b2";
-const char* password = "12345678";
+
+String ssid = "";
+String password = "";
 
 // Pin per i Pulsanti
 const byte PEDALNEXT_PIN = 21;
@@ -122,26 +127,45 @@ String processor(const String& var){
     buttons += "<b>Battery level:</b>";
     buttons.concat(BL.getBatteryChargeLevel());
     
-    buttons += "<h4>Device Name:</h4><input name=\"devicename\" type=\"text\">";
+    buttons.concat("<h4>Device Name:</h4><input name=\"devicename\" value=\"");
+    buttons.concat(preferences.getString("ssid", "PushPush AIR"));
+    buttons.concat("\" type=\"text\">");
     
-    buttons += "<h4>Password:</h4><input name=\"password\" type=\"text\">";
+    buttons.concat("<h4>Password:</h4><input name=\"password\" value=\""); 
+    buttons.concat(preferences.getString("password", "12345678"));
+    buttons.concat("\" type=\"text\">");
     buttons += "<br><small>If you forget the password you can reset to the default '12345678' by pressing the two pedals while turning on the Push Push Air</small>";
         
-    buttons += "<h4>Pedal 1:</h4><select name=\"pedal1\">" + optionsList() + "</select>";
+    buttons += "<h4>Pedal 1:</h4><select name=\"pedal1\">" + optionsList(1) + "</select>";
     // 
-    buttons += "<h4>Pedal 2:</h4><select name=\"pedal2\">" + optionsList() + "</select>";
+    buttons += "<h4>Pedal 2:</h4><select name=\"pedal2\">" + optionsList(2) + "</select>";
 
     return buttons;
   }
   return String();
 }
 
-String optionsList(){
+String optionsList(byte pedal){
+    int selected;
+    if( pedal == 1 ){
+        selected = preferences.getInt("pedal1", 2);
+    }
+    else{
+        selected = preferences.getInt("pedal2", 3);
+    }
+    
     String list = "";
+    
     for(int prs = 0; prs < key_options_num; prs++){
         list.concat("<option value=\"");
         list.concat(prs);
-        list.concat("\">" + key_options[prs].label + "</option>");
+        list.concat("\" ");
+        if( selected == prs ){
+            list.concat("selected");
+        }
+        list.concat(">");
+        list.concat(key_options[prs].label);
+        list.concat("</option>");
     }
     return list;
 }
@@ -165,6 +189,8 @@ static void SendKey( byte pedal ){
 
 void setup(void)
 {
+    preferences.begin("pushpush-config", false);
+    
     bleKeyboard.begin();
     
     // BUTTONS / INPUTS
@@ -188,14 +214,24 @@ void setup(void)
     status_led_on_interval = 200;
     status_led_flag = LOW;
     
+    
     // Connect to Wi-Fi network with SSID and password
     Serial.print("Setting AP (Access Point)…");
-    // Remove the password parameter, if you want the AP (Access Point) to be open
-    WiFi.softAP(ssid, password);
+    ssid = preferences.getString("ssid", "PushPush AIR"); 
+    password = preferences.getString("password", "12345678");
+    
+    const char *wpassword = password.c_str();
+    const char *wssid = ssid.c_str();
+    
+    WiFi.softAP(wssid, wpassword);
     
     IPAddress IP = WiFi.softAPIP();
     Serial.print("AP IP address: ");
     Serial.println(IP);
+    Serial.print("AP SSID: ");
+    Serial.println(wssid);
+    Serial.print("AP IP password: ");
+    Serial.println(wpassword);
 
     // Route for root / web page
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -208,24 +244,29 @@ void setup(void)
             devicename = request->getParam("devicename")->value();
             Serial.println("devicename");
             Serial.println( devicename );
+            preferences.putString("ssid", devicename);
         }
         if(request->hasParam("password")){
-            String password;
-            password = request->getParam("password")->value();
+            String getpassword;
+            getpassword = request->getParam("password")->value();
             Serial.println("password");
-            Serial.println( password );
+            Serial.println( getpassword );
+            preferences.putString("password", getpassword);
         }
         if(request->hasParam("pedal1")){
             String pedal1;
             pedal1 = request->getParam("pedal1")->value();
             Serial.println("pedal1");
             Serial.println( pedal1 );
+            preferences.putInt("pedal1", pedal1.toInt());
         }
         if(request->hasParam("pedal2")){
             String pedal2;
             pedal2 = request->getParam("pedal2")->value();
             Serial.println("pedal2");
             Serial.println( pedal2 );
+            preferences.putInt("pedal2", pedal2.toInt());
+
         }
     
       request->send(200, "text/plain", "Saved!");
