@@ -85,23 +85,7 @@ unsigned long status_led_change_time;
 byte status_led_flag;
 
 const char index_html[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML><html>
-<head>
-  <title>PushPush AIR Configuration v1</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href="data:,">
-  <style>
-    html {font-family: Arial; display: inline-block; text-align: center;}
-    p {font-size: 3.0rem;}
-    body {max-width: 600px; margin:0px auto; padding-bottom: 25px;}
-    .switch {position: relative; display: inline-block; width: 120px; height: 68px} 
-    .switch input {display: none}
-    .slider {position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; border-radius: 6px}
-    .slider:before {position: absolute; content: ""; height: 52px; width: 52px; left: 8px; bottom: 8px; background-color: #fff; -webkit-transition: .4s; transition: .4s; border-radius: 3px}
-    input:checked+.slider {background-color: #b30000}
-    input:checked+.slider:before {-webkit-transform: translateX(52px); -ms-transform: translateX(52px); transform: translateX(52px)}
-  </style>
-</head>
+%HEAD_PLACEHODER%
 <body>
   <h2>PushPush AIR Configuration v10</h2>
   <form action="/save">
@@ -109,19 +93,43 @@ const char index_html[] PROGMEM = R"rawliteral(
   <br>
   <button type="submit">Save</button>
   </form>
-<script>function toggleCheckbox(element) {
-  var xhr = new XMLHttpRequest();
-  if(element.checked){ xhr.open("GET", "/update?output="+element.id+"&state=1", true); }
-  else { xhr.open("GET", "/update?output="+element.id+"&state=0", true); }
-  xhr.send();
-}
-</script>
+</body>
+</html>
+)rawliteral";
+
+const char save_html[] PROGMEM = R"rawliteral(
+%HEAD_PLACEHODER%
+<body>
+  <h2>PushPush AIR Configuration v10</h2>
+  <h3>Configuration saved</h3>
+  <form action="/">
+    <button type="submit">Edit Again</button>
+  </form>
+  <form action="/end">
+    <button type="submit">Finish</button>
+  </form>
 </body>
 </html>
 )rawliteral";
 
 // Replaces placeholder with button section in your web page
 String processor(const String& var){
+  if(var == "HEAD_PLACEHODER"){
+    String head = "";
+    head += "<!DOCTYPE HTML><html>";
+    head += "<head>";
+      head += "<title>PushPush AIR Configuration v1</title>";
+      head += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">";
+      head += "<link rel=\"icon\" href=\"data:,\">";
+      head += "<style>";
+        head += "html {font-family: Arial; display: inline-block; text-align: center;}";
+        head += "h3 {color:red}";
+        head += "p {font-size: 3.0rem;}";
+        head += "body {max-width: 600px; margin:0px auto; padding-bottom: 25px;}";
+      head += "</style>";
+    head += "</head>"  ;
+    return head;
+  }
   if(var == "SELECT_PLACEHODER"){
     String buttons = "";
     buttons += "<b>Battery level:</b>";
@@ -132,9 +140,9 @@ String processor(const String& var){
     buttons.concat("\" type=\"text\">");
     
     buttons.concat("<h4>Password:</h4><input name=\"password\" value=\""); 
-    buttons.concat(preferences.getString("password", "12345678"));
+    buttons.concat(preferences.getString("password", "12345679"));
     buttons.concat("\" type=\"text\">");
-    buttons += "<br><small>If you forget the password you can reset to the default '12345678' by pressing the two pedals while turning on the Push Push Air</small>";
+    buttons += "<br><small>If you forget the password you can reset to the default '12345679' by pressing the two pedals while turning on the Push Push Air</small>";
         
     buttons += "<h4>Pedal 1:</h4><select name=\"pedal1\">" + optionsList(1) + "</select>";
     // 
@@ -218,24 +226,30 @@ void setup(void)
     // Connect to Wi-Fi network with SSID and password
     Serial.print("Setting AP (Access Point)…");
     ssid = preferences.getString("ssid", "PushPush AIR"); 
-    password = preferences.getString("password", "12345678");
+    password = preferences.getString("password", "12345679");
     
     const char *wpassword = password.c_str();
     const char *wssid = ssid.c_str();
     
     WiFi.softAP(wssid, wpassword);
+    // WiFi.softAP(wssid);
     
     IPAddress IP = WiFi.softAPIP();
     Serial.print("AP IP address: ");
     Serial.println(IP);
     Serial.print("AP SSID: ");
     Serial.println(wssid);
-    Serial.print("AP IP password: ");
+    Serial.print("AP password: ");
     Serial.println(wpassword);
 
     // Route for root / web page
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
       request->send_P(200, "text/html", index_html, processor);
+    });
+    
+    server.on("/end", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send(200, "text/plain", "Connection closed.");
+      WiFi.softAPdisconnect(true);
     });
     
     server.on("/save", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -269,7 +283,7 @@ void setup(void)
 
         }
     
-      request->send(200, "text/plain", "Saved!");
+      request->send_P(200, "text/html", save_html, processor);
     });
     
     // Start server
