@@ -49,18 +49,20 @@ const int key_options_num = sizeof(key_options) / sizeof(key_options[0]);
 String ssid = "";
 String password = "";
 
+// Default preferences
+const byte PEDAL1_DEFAULT_KEY_INDEX = 2; // it's the KEY_LEFT_ARROW in the key_options[] sturct
+const byte PEDAL2_DEFAULT_KEY_INDEX = 3; // it's the KEY_RIGHT_ARROW in the key_options[] sturct
+const String SSID_DEFAULT = "PushPush AIR v.2";
+const String PASSWORD_DEFAULT = "12345678";
+
 // Pin per i Pulsanti
-const byte PEDAL1_PIN = 21;
-const byte PEDAL2_PIN = 23;
+const byte PEDAL1_PIN = 23;
+const byte PEDAL2_PIN = 21;
 
 // Led
 const byte PEDAL1_LED_PIN = LED_BUILTIN;
 const byte PEDAL2_LED_PIN = LED_BUILTIN;
 const byte STATUS_LED_PIN = LED_BUILTIN;
-
-// Tasti da emulare
-const byte PEDAL1_KEY = KEY_RIGHT_ARROW;
-const byte PEDAL2_KEY = KEY_LEFT_ARROW;
 
 // Instantiate a Bounce object
 Bounce ped_next = Bounce(); 
@@ -131,11 +133,11 @@ String processor(const String& var){
     buttons.concat(BL.getBatteryChargeLevel());
     
     buttons.concat("<h4>Device Name:</h4><input name=\"devicename\" value=\"");
-    buttons.concat(preferences.getString("ssid", "PushPush AIR"));
+    buttons.concat(preferences.getString("ssid", SSID_DEFAULT));
     buttons.concat("\" type=\"text\">");
     
     buttons.concat("<h4>Password:</h4><input name=\"password\" value=\""); 
-    buttons.concat(preferences.getString("password", "12345679"));
+    buttons.concat(preferences.getString("password", PASSWORD_DEFAULT));
     buttons.concat("\" type=\"text\">");
     buttons += "<br><small>If you forget the password you can reset to the default '12345679' by pressing the two pedals while turning on the Push Push Air</small>";
         
@@ -151,10 +153,10 @@ String processor(const String& var){
 String optionsList(byte pedal){
     int selected;
     if( pedal == 1 ){
-        selected = preferences.getInt("pedal1", 2);
+        selected = preferences.getInt("pedal1", PEDAL1_DEFAULT_KEY_INDEX);
     }
     else{
-        selected = preferences.getInt("pedal2", 3);
+        selected = preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX);
     }
     
     String list = "";
@@ -177,14 +179,14 @@ static void SendKey( byte pedal ){
   if (bleKeyboard.isConnected()) {
     switch( pedal ){
       case PEDAL1_PIN:
-          bleKeyboard.press(key_options[preferences.getInt("pedal1", 2)].value);
+          bleKeyboard.press(key_options[preferences.getInt("pedal1", PEDAL1_DEFAULT_KEY_INDEX)].value);
       break; 
       case PEDAL2_PIN:
-          bleKeyboard.press(key_options[preferences.getInt("pedal2", 2)].value);
+          bleKeyboard.press(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].value);
       break; 
     }
     
-    Serial.println(pedal);
+    Serial.println(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].label);
     delay(100);
     bleKeyboard.releaseAll();
   }
@@ -220,8 +222,8 @@ void setup(void)
     
     // Connect to Wi-Fi network with SSID and password
     Serial.print("Setting AP (Access Point)…");
-    ssid = preferences.getString("ssid", "PushPush AIR"); 
-    password = preferences.getString("password", "12345679");
+    ssid = preferences.getString("ssid", SSID_DEFAULT); 
+    password = preferences.getString("password", PASSWORD_DEFAULT);
     
     const char *wpassword = password.c_str();
     const char *wssid = ssid.c_str();
@@ -237,9 +239,9 @@ void setup(void)
     Serial.print("AP password: ");
     Serial.println(wpassword);
     Serial.print("Ped1: ");
-    Serial.println(preferences.getInt("pedal1", 2));
+    Serial.println(key_options[preferences.getInt("pedal1", PEDAL1_DEFAULT_KEY_INDEX)].label);
     Serial.print("Ped2: ");
-    Serial.println(preferences.getInt("pedal2", 3));
+    Serial.println(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].label);
 
     // Route for root / web page
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
