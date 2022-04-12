@@ -1,7 +1,5 @@
 #include <Preferences.h>
-
 Preferences preferences;
-
 
 /**
  * for 18650 battery level check
@@ -52,20 +50,17 @@ String ssid = "";
 String password = "";
 
 // Pin per i Pulsanti
-const byte PEDALNEXT_PIN = 21;
-const byte PEDALPREV_PIN = 23;
+const byte PEDAL1_PIN = 21;
+const byte PEDAL2_PIN = 23;
 
 // Led
-const byte PEDALNEXT_LED = LED_BUILTIN;
-const byte PEDALPREV_LED = LED_BUILTIN;
-const byte STATUS_LED = LED_BUILTIN;
+const byte PEDAL1_LED_PIN = LED_BUILTIN;
+const byte PEDAL2_LED_PIN = LED_BUILTIN;
+const byte STATUS_LED_PIN = LED_BUILTIN;
 
 // Tasti da emulare
-const byte PEDALNEXT_KEY = KEY_RIGHT_ARROW;
-const byte PEDALPREV_KEY = KEY_LEFT_ARROW;
-
-const byte PED_NEXT = PEDALNEXT_PIN;
-const byte PED_PREV = PEDALPREV_PIN;
+const byte PEDAL1_KEY = KEY_RIGHT_ARROW;
+const byte PEDAL2_KEY = KEY_LEFT_ARROW;
 
 // Instantiate a Bounce object
 Bounce ped_next = Bounce(); 
@@ -181,11 +176,12 @@ String optionsList(byte pedal){
 static void SendKey( byte pedal ){
   if (bleKeyboard.isConnected()) {
     switch( pedal ){
-      case PED_NEXT:
+      key_options[prs].value
           bleKeyboard.press(PEDALNEXT_KEY);
+      case PEDAL1_PIN:
       break; 
-      case PED_PREV:
           bleKeyboard.press(PEDALPREV_KEY);
+      case PEDAL2_PIN:
       break; 
     }
     
@@ -202,16 +198,16 @@ void setup(void)
     bleKeyboard.begin();
     
     // BUTTONS / INPUTS
-    pinMode(PEDALNEXT_PIN, INPUT_PULLUP);
-    pinMode(PEDALPREV_PIN, INPUT_PULLUP);
+    pinMode(PEDAL1_PIN, INPUT_PULLUP);
+    pinMode(PEDAL2_PIN, INPUT_PULLUP);
     
-    ped_next.attach(PEDALNEXT_PIN);
-    ped_prev.attach(PEDALPREV_PIN);
+    ped_next.attach(PEDAL1_PIN);
+    ped_prev.attach(PEDAL2_PIN);
 
     // OUTPUTS /LEDS
-    pinMode(PEDALNEXT_LED, OUTPUT);
-    pinMode(PEDALPREV_LED, OUTPUT);
-    pinMode(STATUS_LED, OUTPUT);
+    pinMode(PEDAL1_LED_PIN, OUTPUT);
+    pinMode(PEDAL2_LED_PIN, OUTPUT);
+    pinMode(STATUS_LED_PIN, OUTPUT);
     
     Serial.begin(115200);
 //    Serial.setDebugOutput(true);
@@ -241,6 +237,10 @@ void setup(void)
     Serial.println(wssid);
     Serial.print("AP password: ");
     Serial.println(wpassword);
+    Serial.print("Ped1: ");
+    Serial.println(preferences.getInt("pedal1", 2));
+    Serial.print("Ped2: ");
+    Serial.println(preferences.getInt("pedal2", 3));
 
     // Route for root / web page
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -296,12 +296,12 @@ void loop(void)
     if(status_led_flag == HIGH && millis() > status_led_change_time ){
       status_led_change_time = millis() + status_led_on_interval;
       status_led_flag = LOW;
-      digitalWrite(STATUS_LED, status_led_flag );
+      digitalWrite(STATUS_LED_PIN, status_led_flag );
     }
     if(status_led_flag == LOW && millis() > status_led_change_time ){
       status_led_change_time = millis() + status_led_off_interval;
       status_led_flag = HIGH;
-      digitalWrite(STATUS_LED, status_led_flag );
+      digitalWrite(STATUS_LED_PIN, status_led_flag );
     }
 
     if(  millis() > btnReadingSettle ){
@@ -317,9 +317,9 @@ void loop(void)
           pedalNEXTStateLast = pedalState;
   
           if (pedalState == LOW ) {
-              SendKey( PED_NEXT );
+              SendKey( PEDAL1_PIN );
           }
-          digitalWrite(PEDALNEXT_LED, pedalState );
+          digitalWrite(PEDAL1_LED_PIN, pedalState );
       }
   
       pedalState = ped_prev.read();
@@ -327,9 +327,9 @@ void loop(void)
           pedalPREVStateLast = pedalState;
   
           if (pedalState == LOW ) {
-              SendKey( PED_PREV );
+              SendKey( PEDAL2_PIN );
           }
-          digitalWrite(PEDALPREV_LED, pedalState );
+          digitalWrite(PEDAL2_LED_PIN, pedalState );
       }
     }
 
