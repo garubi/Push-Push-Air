@@ -1,22 +1,19 @@
+// Default preferences
+const byte PEDAL1_DEFAULT_KEY_INDEX = 2; // it's the KEY_LEFT_ARROW in the key_options[] sturct
+const byte PEDAL2_DEFAULT_KEY_INDEX = 3; // it's the KEY_RIGHT_ARROW in the key_options[] sturct
+const String PASSWORD_DEFAULT = "12345678";
+const String SSID_DEFAULT = "PushPushAIR2";
+
 #include <Preferences.h>
 Preferences preferences;
 
-/**
- * for 18650 battery level check
- * see: https://www.pangodream.es/esp32-getting-battery-charging-level
- *  
- * If you need to change default values you can use it as
- * Pangodream_18650_CL BL(ADC_PIN, CONV_FACTOR, READS);
- * #define ADC_PIN 34
- * #define CONV_FACTOR 1.7
- * #define READS 20
- */
 #include <Pangodream_18650_CL.h>
 Pangodream_18650_CL BL;
 
 #include <BleKeyboard.h>
-//BleKeyboard bleKeyboard;
-BleKeyboard bleKeyboard("PushPush AIR", "UBI Stage", BL.getBatteryChargeLevel());
+String init_bleName = SSID_DEFAULT;
+const char *winit_bleName = init_bleName.c_str();
+BleKeyboard bleKeyboard(winit_bleName, "UBI Stage", BL.getBatteryChargeLevel());
 
 #include <Bounce2.h>
 
@@ -48,12 +45,6 @@ const int key_options_num = sizeof(key_options) / sizeof(key_options[0]);
 
 String ssid = "";
 String password = "";
-
-// Default preferences
-const byte PEDAL1_DEFAULT_KEY_INDEX = 2; // it's the KEY_LEFT_ARROW in the key_options[] sturct
-const byte PEDAL2_DEFAULT_KEY_INDEX = 3; // it's the KEY_RIGHT_ARROW in the key_options[] sturct
-const String SSID_DEFAULT = "PushPush AIR v.2";
-const String PASSWORD_DEFAULT = "12345678";
 
 // Pin per i Pulsanti
 const byte PEDAL1_PIN = 23;
@@ -134,12 +125,13 @@ String processor(const String& var){
     
     buttons.concat("<h4>Device Name:</h4><input name=\"devicename\" value=\"");
     buttons.concat(preferences.getString("ssid", SSID_DEFAULT));
-    buttons.concat("\" type=\"text\">");
+    buttons.concat("\" type=\"text\" maxlength=\"15\">");
+    buttons += "<br><small>You have to restart PushPush AIR in order to the new name becomes effective</small>";
     
     buttons.concat("<h4>Password:</h4><input name=\"password\" value=\""); 
     buttons.concat(preferences.getString("password", PASSWORD_DEFAULT));
     buttons.concat("\" type=\"text\">");
-    buttons += "<br><small>If you forget the password you can reset to the default '12345679' by pressing the two pedals while turning on the Push Push Air</small>";
+    buttons += "<br><small>If you forget the password you can reset to the default "+ PASSWORD_DEFAULT +" by pressing the two pedals while turning on the Push Push Air</small>";
         
     buttons += "<h4>Pedal 1:</h4><select name=\"pedal1\">" + optionsList(1) + "</select>";
     // 
@@ -196,6 +188,9 @@ void setup(void)
 {
     preferences.begin("pushpush-config", false);
     
+    String bleName = preferences.getString("ssid", SSID_DEFAULT);
+    const char *wbleName = bleName.c_str();
+    bleKeyboard.setName(wbleName);
     bleKeyboard.begin();
     
     // BUTTONS / INPUTS
