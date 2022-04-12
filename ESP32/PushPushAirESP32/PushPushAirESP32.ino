@@ -123,7 +123,7 @@ String processor(const String& var){
     
     buttons.concat("<h4>Device Name:</h4><input name=\"devicename\" value=\"");
     buttons.concat(preferences.getString("ssid", SSID_DEFAULT));
-    buttons.concat("\" type=\"text\">");
+    buttons.concat("\" type=\"text\" maxlength=\"15\">");
     buttons += "<br><small>You have to restart PushPush AIR in order to the new name becomes effective</small>";
     
     buttons.concat("<h4>Password:</h4><input name=\"password\" value=\""); 
