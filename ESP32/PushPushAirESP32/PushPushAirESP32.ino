@@ -284,6 +284,46 @@ void setup(void)
     
     // Start server
     server.begin();
+    
+    // To reset to factory presets keep pressed the pedal 1 while turning on the device
+    // then press the pedal 2
+    ped_prev.update();
+    long reset_btn_on_time = millis();
+    byte reset_btn_led = 1;
+    byte im_resetting = false;
+
+    while (ped_prev.read() == 0){
+        Serial.println("Waiting for Pedal 2 to start password reset ");
+      digitalWrite(STATUS_LED_PIN, reset_btn_led); 
+      if( millis()-reset_btn_on_time > 200 && !im_resetting ){
+          digitalWrite(STATUS_LED_PIN, !reset_btn_led);
+          reset_btn_led = !reset_btn_led;
+        reset_btn_on_time = millis();
+      }
+       ped_prev.update();
+       ped_next.update();
+
+      if (ped_next.fell()){ // the pedal 2 button was pressed: let's start the reset procedure
+        Serial.println("Starting password reset ");
+         digitalWrite(STATUS_LED_PIN, HIGH); //keep the led on to signal that the reset procedure is starting
+         im_resetting = true; //don't blink animore
+         
+         Serial.println("Reset passowrd to");
+         Serial.println(PASSWORD_DEFAULT);
+         
+         String rpassword = PASSWORD_DEFAULT;
+         const char *wrpassword = rpassword.c_str();
+         preferences.putString("password", wrpassword);
+
+         delay(3000);
+
+         Serial.println("Password reset done");
+         // turn the led off when the write procedure finish
+         digitalWrite(STATUS_LED_PIN, LOW);
+      }
+    }
+    
+    
 }
 
 void loop(void)
