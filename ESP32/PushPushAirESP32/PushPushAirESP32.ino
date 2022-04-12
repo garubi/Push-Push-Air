@@ -215,75 +215,97 @@ void setup(void)
     status_led_flag = LOW;
     
     
-    // Connect to Wi-Fi network with SSID and password
-    Serial.print("Setting AP (Access Point)…");
-    ssid = preferences.getString("ssid", SSID_DEFAULT); 
-    password = preferences.getString("password", PASSWORD_DEFAULT);
+    ped_next.update();
+    long ap_btn_on_time = millis();
+    byte ap_btn_led = 1;
+    byte ap_started = false;
     
-    const char *wpassword = password.c_str();
-    const char *wssid = ssid.c_str();
-    
-    WiFi.softAP(wssid, wpassword);
-    // WiFi.softAP(wssid);
-    
-    IPAddress IP = WiFi.softAPIP();
-    Serial.print("AP IP address: ");
-    Serial.println(IP);
-    Serial.print("AP SSID: ");
-    Serial.println(wssid);
-    Serial.print("AP password: ");
-    Serial.println(wpassword);
-    Serial.print("Ped1: ");
-    Serial.println(key_options[preferences.getInt("pedal1", PEDAL1_DEFAULT_KEY_INDEX)].label);
-    Serial.print("Ped2: ");
-    Serial.println(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].label);
-
-    // Route for root / web page
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send_P(200, "text/html", index_html, processor);
-    });
-    
-    server.on("/end", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(200, "text/plain", "Connection closed.");
-      WiFi.softAPdisconnect(true);
-    });
-    
-    server.on("/save", HTTP_GET, [](AsyncWebServerRequest *request){
-        if(request->hasParam("devicename")){
-            String devicename;
-            devicename = request->getParam("devicename")->value();
-            Serial.println("devicename");
-            Serial.println( devicename );
-            preferences.putString("ssid", devicename);
-        }
-        if(request->hasParam("password")){
-            String getpassword;
-            getpassword = request->getParam("password")->value();
-            Serial.println("password");
-            Serial.println( getpassword );
-            preferences.putString("password", getpassword);
-        }
-        if(request->hasParam("pedal1")){
-            String pedal1;
-            pedal1 = request->getParam("pedal1")->value();
-            Serial.println("pedal1");
-            Serial.println( pedal1 );
-            preferences.putInt("pedal1", pedal1.toInt());
-        }
-        if(request->hasParam("pedal2")){
-            String pedal2;
-            pedal2 = request->getParam("pedal2")->value();
-            Serial.println("pedal2");
-            Serial.println( pedal2 );
-            preferences.putInt("pedal2", pedal2.toInt());
-
-        }
-    
-      request->send_P(200, "text/html", save_html, processor);
-    });
-    
-    // Start server
-    server.begin();
+    // start the access point to do the configuration when the device is started while pushing pedal 2
+    while (ped_next.read() == 0){
+        Serial.println("Starting WiFI accessPoint...");
+      digitalWrite(STATUS_LED_PIN, ap_btn_led); 
+      if( millis()-reset_btn_on_time > 600 && !im_resetting ){
+          digitalWrite(STATUS_LED_PIN, !reset_btn_led);
+          reset_btn_led = !reset_btn_led;
+        reset_btn_on_time = millis();
+      }
+      
+      // Connect to Wi-Fi network with SSID and password
+      Serial.print("Setting AP (Access Point)…");
+      ssid = preferences.getString("ssid", SSID_DEFAULT); 
+      password = preferences.getString("password", PASSWORD_DEFAULT);
+      
+      const char *wpassword = password.c_str();
+      const char *wssid = ssid.c_str();
+      
+      WiFi.softAP(wssid, wpassword);
+      
+      IPAddress IP = WiFi.softAPIP();
+      Serial.print("AP IP address: ");
+      Serial.println(IP);
+      Serial.print("AP SSID: ");
+      Serial.println(wssid);
+      Serial.print("AP password: ");
+      Serial.println(wpassword);
+      Serial.print("Ped1: ");
+      Serial.println(key_options[preferences.getInt("pedal1", PEDAL1_DEFAULT_KEY_INDEX)].label);
+      Serial.print("Ped2: ");
+      Serial.println(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].label);
+  
+      // Route for root / web page
+      server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send_P(200, "text/html", index_html, processor);
+      });
+      
+      server.on("/end", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(200, "text/plain", "Connection closed.");
+        WiFi.softAPdisconnect(true);
+        Serial.println("Access Point closed");
+        // turn the led off when the write procedure finish
+        digitalWrite(STATUS_LED_PIN, LOW );
+      });
+      
+      server.on("/save", HTTP_GET, [](AsyncWebServerRequest *request){
+          if(request->hasParam("devicename")){
+              String devicename;
+              devicename = request->getParam("devicename")->value();
+              Serial.println("devicename");
+              Serial.println( devicename );
+              preferences.putString("ssid", devicename);
+          }
+          if(request->hasParam("password")){
+              String getpassword;
+              getpassword = request->getParam("password")->value();
+              Serial.println("password");
+              Serial.println( getpassword );
+              preferences.putString("password", getpassword);
+          }
+          if(request->hasParam("pedal1")){
+              String pedal1;
+              pedal1 = request->getParam("pedal1")->value();
+              Serial.println("pedal1");
+              Serial.println( pedal1 );
+              preferences.putInt("pedal1", pedal1.toInt());
+          }
+          if(request->hasParam("pedal2")){
+              String pedal2;
+              pedal2 = request->getParam("pedal2")->value();
+              Serial.println("pedal2");
+              Serial.println( pedal2 );
+              preferences.putInt("pedal2", pedal2.toInt());
+  
+          }
+      
+        request->send_P(200, "text/html", save_html, processor);
+      });
+      
+      // Start server
+      server.begin();
+      
+      Serial.println("Access Point Started");
+      // turn the led off when the write procedure finish
+      digitalWrite(STATUS_LED_PIN, HIGH  );
+    }
     
     // To reset to factory presets keep pressed the pedal 1 while turning on the device
     // then press the pedal 2
@@ -322,7 +344,7 @@ void setup(void)
          digitalWrite(STATUS_LED_PIN, LOW);
       }
     }
-    
+
     
 }
 
