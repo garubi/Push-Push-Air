@@ -176,12 +176,11 @@ String optionsList(byte pedal){
 static void SendKey( byte pedal ){
   if (bleKeyboard.isConnected()) {
     switch( pedal ){
-      key_options[prs].value
-          bleKeyboard.press(PEDALNEXT_KEY);
       case PEDAL1_PIN:
+          bleKeyboard.press(key_options[preferences.getInt("pedal1", 2)].value);
       break; 
-          bleKeyboard.press(PEDALPREV_KEY);
       case PEDAL2_PIN:
+          bleKeyboard.press(key_options[preferences.getInt("pedal2", 2)].value);
       break; 
     }
     
