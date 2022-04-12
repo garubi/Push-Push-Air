@@ -47,8 +47,8 @@ String ssid = "";
 String password = "";
 
 // Pin per i Pulsanti
-const byte PEDAL1_PIN = 23;
-const byte PEDAL2_PIN = 21;
+const byte PEDAL1_PIN = 21;
+const byte PEDAL2_PIN = 23;
 
 // Led
 const byte PEDAL1_LED_PIN = LED_BUILTIN;
@@ -197,8 +197,8 @@ void setup(void)
     pinMode(PEDAL1_PIN, INPUT_PULLUP);
     pinMode(PEDAL2_PIN, INPUT_PULLUP);
     
-    ped_next.attach(PEDAL1_PIN);
-    ped_prev.attach(PEDAL2_PIN);
+    ped_next.attach(PEDAL2_PIN);
+    ped_prev.attach(PEDAL1_PIN);
 
     // OUTPUTS /LEDS
     pinMode(PEDAL1_LED_PIN, OUTPUT);
