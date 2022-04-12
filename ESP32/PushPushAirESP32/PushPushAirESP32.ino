@@ -11,7 +11,9 @@ Preferences preferences;
 Pangodream_18650_CL BL;
 
 #include <BleKeyboard.h>
-BleKeyboard bleKeyboard(SSID_DEFAULT, "UBI Stage", BL.getBatteryChargeLevel());
+String init_bleName = SSID_DEFAULT;
+const char *winit_bleName = init_bleName.c_str();
+BleKeyboard bleKeyboard(winit_bleName, "UBI Stage", BL.getBatteryChargeLevel());
 
 #include <Bounce2.h>
 
@@ -186,7 +188,6 @@ void setup(void)
 {
     preferences.begin("pushpush-config", false);
     
-    // bleKeyboard.setName(preferences.getString("ssid", SSID_DEFAULT));
     String bleName = preferences.getString("ssid", SSID_DEFAULT);
     const char *wbleName = bleName.c_str();
     bleKeyboard.setName(wbleName);
