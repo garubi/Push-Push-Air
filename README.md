@@ -1,7 +1,12 @@
 # Push Push Air
 
-A little (but expandable) battery powered pedalboard that can turn pages, send keystrokes, etc via Bluethooth. Made with an ESP32
+_[this page is a work in progress, and for the moment it's little more than a notepad... it will become a well documentend Readme aniway, soon or later]_
+
+A little (but expandable) battery powered pedalboard that, emulating a Bluethooth keyboard, send keystrokes (per example it can turn pages on a PDF reader... ). 
+
+Made with an ESP32
 Configurable via WiFI (you can choose the keystrokes that you want to send)
+
 
 
 Libraries used:
