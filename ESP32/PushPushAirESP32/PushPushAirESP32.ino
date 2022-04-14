@@ -72,6 +72,8 @@ int status_led_on_interval;
 unsigned long status_led_change_time;
 byte status_led_flag;
 
+byte ap_started = false; // true when in configuration mode and Access Point is ON
+
 const char index_html[] PROGMEM = R"rawliteral(
 %HEAD_PLACEHODER%
 <body>
@@ -209,103 +211,99 @@ void setup(void)
 //    Serial.setDebugOutput(true);
 //    Serial.print("ESP32 SDK: ");
 //    Serial.println(ESP.getSdkVersion());
-
-    status_led_off_interval = 100 * BL.getBatteryChargeLevel();
+    digitalWrite(STATUS_LED_PIN, LOW);
+    delay(1000);
+    digitalWrite(STATUS_LED_PIN, HIGH);
+    
+    Serial.print("Ped1: ");
+    Serial.println(key_options[preferences.getInt("pedal1", PEDAL1_DEFAULT_KEY_INDEX)].label);
+    Serial.print("Ped2: ");
+    Serial.println(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].label);
+    
     status_led_on_interval = 200;
     status_led_flag = LOW;
     
     
-    ped_next.update();
-    long ap_btn_on_time = millis();
-    byte ap_btn_led = 1;
-    byte ap_started = false;
+    ped_next.update();    
     
     // start the access point to do the configuration when the device is started while pushing pedal 2
-    while (ped_next.read() == 0){
+    if (ped_next.read() == 0){
         Serial.println("Starting WiFI accessPoint...");
-      digitalWrite(STATUS_LED_PIN, ap_btn_led); 
-      if( millis()-reset_btn_on_time > 600 && !im_resetting ){
-          digitalWrite(STATUS_LED_PIN, !reset_btn_led);
-          reset_btn_led = !reset_btn_led;
-        reset_btn_on_time = millis();
-      }
+        
+          digitalWrite(STATUS_LED_PIN, LOW); 
+          
+          Serial.println("Setting AP (Access Point)…");
+          ssid = preferences.getString("ssid", SSID_DEFAULT); 
+          password = preferences.getString("password", PASSWORD_DEFAULT);
+          
+          const char *wpassword = password.c_str();
+          const char *wssid = ssid.c_str();
+          
+          WiFi.softAP(wssid, wpassword);
+
+          IPAddress IP = WiFi.softAPIP();
+          Serial.print("AP IP address: ");
+          Serial.println(IP);
+          Serial.print("AP SSID: ");
+          Serial.println(wssid);
+          Serial.print("AP password: ");
+          Serial.println(wpassword);
       
-      // Connect to Wi-Fi network with SSID and password
-      Serial.print("Setting AP (Access Point)…");
-      ssid = preferences.getString("ssid", SSID_DEFAULT); 
-      password = preferences.getString("password", PASSWORD_DEFAULT);
-      
-      const char *wpassword = password.c_str();
-      const char *wssid = ssid.c_str();
-      
-      WiFi.softAP(wssid, wpassword);
-      
-      IPAddress IP = WiFi.softAPIP();
-      Serial.print("AP IP address: ");
-      Serial.println(IP);
-      Serial.print("AP SSID: ");
-      Serial.println(wssid);
-      Serial.print("AP password: ");
-      Serial.println(wpassword);
-      Serial.print("Ped1: ");
-      Serial.println(key_options[preferences.getInt("pedal1", PEDAL1_DEFAULT_KEY_INDEX)].label);
-      Serial.print("Ped2: ");
-      Serial.println(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].label);
-  
-      // Route for root / web page
-      server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send_P(200, "text/html", index_html, processor);
-      });
-      
-      server.on("/end", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(200, "text/plain", "Connection closed.");
-        WiFi.softAPdisconnect(true);
-        Serial.println("Access Point closed");
-        // turn the led off when the write procedure finish
-        digitalWrite(STATUS_LED_PIN, LOW );
-      });
-      
-      server.on("/save", HTTP_GET, [](AsyncWebServerRequest *request){
-          if(request->hasParam("devicename")){
-              String devicename;
-              devicename = request->getParam("devicename")->value();
-              Serial.println("devicename");
-              Serial.println( devicename );
-              preferences.putString("ssid", devicename);
-          }
-          if(request->hasParam("password")){
-              String getpassword;
-              getpassword = request->getParam("password")->value();
-              Serial.println("password");
-              Serial.println( getpassword );
-              preferences.putString("password", getpassword);
-          }
-          if(request->hasParam("pedal1")){
-              String pedal1;
-              pedal1 = request->getParam("pedal1")->value();
-              Serial.println("pedal1");
-              Serial.println( pedal1 );
-              preferences.putInt("pedal1", pedal1.toInt());
-          }
-          if(request->hasParam("pedal2")){
-              String pedal2;
-              pedal2 = request->getParam("pedal2")->value();
-              Serial.println("pedal2");
-              Serial.println( pedal2 );
-              preferences.putInt("pedal2", pedal2.toInt());
-  
-          }
-      
-        request->send_P(200, "text/html", save_html, processor);
-      });
-      
-      // Start server
-      server.begin();
-      
-      Serial.println("Access Point Started");
-      // turn the led off when the write procedure finish
-      digitalWrite(STATUS_LED_PIN, HIGH  );
+          // Start server
+          server.begin();
+          ap_started = true;
+          Serial.println("Access Point Started");
     }
+    
+    // Route for root / web page
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send_P(200, "text/html", index_html, processor);
+    });
+    
+    server.on("/end", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send(200, "text/plain", "Connection closed.");
+      WiFi.softAPdisconnect(true);
+      server.end();
+        
+      Serial.println("Access Point closed");
+      // turn the led off when the Access Point is disconnected
+      ap_started = false;
+      digitalWrite(STATUS_LED_PIN, HIGH );
+    });
+    
+    server.on("/save", HTTP_GET, [](AsyncWebServerRequest *request){
+        if(request->hasParam("devicename")){
+            String devicename;
+            devicename = request->getParam("devicename")->value();
+            Serial.println("devicename");
+            Serial.println( devicename );
+            preferences.putString("ssid", devicename);
+        }
+        if(request->hasParam("password")){
+            String getpassword;
+            getpassword = request->getParam("password")->value();
+            Serial.println("password");
+            Serial.println( getpassword );
+            preferences.putString("password", getpassword);
+        }
+        if(request->hasParam("pedal1")){
+            String pedal1;
+            pedal1 = request->getParam("pedal1")->value();
+            Serial.println("pedal1");
+            Serial.println( pedal1 );
+            preferences.putInt("pedal1", pedal1.toInt());
+        }
+        if(request->hasParam("pedal2")){
+            String pedal2;
+            pedal2 = request->getParam("pedal2")->value();
+            Serial.println("pedal2");
+            Serial.println( pedal2 );
+            preferences.putInt("pedal2", pedal2.toInt());
+
+        }
+      request->send_P(200, "text/html", save_html, processor);
+    });
+    
     
     // To reset to factory presets keep pressed the pedal 1 while turning on the device
     // then press the pedal 2
@@ -344,22 +342,25 @@ void setup(void)
          digitalWrite(STATUS_LED_PIN, LOW);
       }
     }
-
     
 }
 
 void loop(void)
 {
-
-    if(status_led_flag == HIGH && millis() > status_led_change_time ){
-      status_led_change_time = millis() + status_led_on_interval;
-      status_led_flag = LOW;
-      digitalWrite(STATUS_LED_PIN, status_led_flag );
+    if( ap_started != true ){ // we are not in config mode.
+        if(status_led_flag == HIGH && millis() > status_led_change_time ){
+          status_led_change_time = millis() + status_led_on_interval;
+          status_led_flag = LOW;
+          digitalWrite(STATUS_LED_PIN, status_led_flag );
+        }
+        if(status_led_flag == LOW && millis() > status_led_change_time ){
+          status_led_change_time = millis() + status_led_off_interval;
+          status_led_flag = HIGH;
+          digitalWrite(STATUS_LED_PIN, status_led_flag );
+        }
     }
-    if(status_led_flag == LOW && millis() > status_led_change_time ){
-      status_led_change_time = millis() + status_led_off_interval;
-      status_led_flag = HIGH;
-      digitalWrite(STATUS_LED_PIN, status_led_flag );
+    else{
+        digitalWrite(STATUS_LED_PIN, LOW );
     }
 
     if(  millis() > btnReadingSettle ){
@@ -373,8 +374,9 @@ void loop(void)
       pedalState = ped_next.read();
       if (pedalState != pedalNEXTStateLast) {
           pedalNEXTStateLast = pedalState;
-  
+          
           if (pedalState == LOW ) {
+              Serial.print("Pushed pedal 1");
               SendKey( PEDAL1_PIN );
           }
           digitalWrite(PEDAL1_LED_PIN, pedalState );
@@ -385,6 +387,7 @@ void loop(void)
           pedalPREVStateLast = pedalState;
   
           if (pedalState == LOW ) {
+              Serial.print("Pushed pedal 2");
               SendKey( PEDAL2_PIN );
           }
           digitalWrite(PEDAL2_LED_PIN, pedalState );
