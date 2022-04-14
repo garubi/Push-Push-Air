@@ -144,6 +144,13 @@ String processor(const String& var){
   return String();
 }
 
+int batteryChargeMultiplier(){
+    if( BL.getBatteryChargeLevel() < 1 ){
+        return 1;
+    }
+    return BL.getBatteryChargeLevel();
+    
+}
 String optionsList(byte pedal){
     int selected;
     if( pedal == 1 ){
@@ -220,6 +227,8 @@ void setup(void)
     Serial.print("Ped2: ");
     Serial.println(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].label);
     
+    status_led_off_interval = 100 * batteryChargeMultiplier();
+    // status_led_off_interval = 100 * 1;
     status_led_on_interval = 200;
     status_led_flag = LOW;
     
@@ -405,7 +414,7 @@ void loop(void)
     // Serial.print("Charge level: ");
     // Serial.println(BL.getBatteryChargeLevel());
     // Serial.println("");
-    status_led_off_interval = 100 * BL.getBatteryChargeLevel();
+    status_led_off_interval = 100 * batteryChargeMultiplier();
     bleKeyboard.setBatteryLevel(BL.getBatteryChargeLevel());
   }
 
