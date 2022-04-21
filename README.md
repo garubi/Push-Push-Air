@@ -7,11 +7,11 @@ A little (but expandable) battery powered pedalboard that, emulating a Bluethoot
 Made with an ESP32
 Configurable via WiFI (you can choose the keystrokes that you want to send)
 
-##Configuration##
+## Configuration ##
 - Turn on the PPA while pushing the right-most pedal.
 - The status led will be steady blue.
 - Now connect from a computer or mobile device to the wifi network "Push Push AIR" and insert the passord
-- Once the connection is etablished, browse to 192.168.4.1 th use the configuration page.
+- Once the connection is etablished, browse to 192.168.4.1 to use the configuration page.
 
 Libraries used:
 ```
@@ -27,6 +27,6 @@ Libraries used:
  */
  ```
  
- BleKeyboard 0.3.0
+ BleKeyboard 0.3.2beta
  Preferences
  Bounce2
