@@ -144,13 +144,13 @@ String processor(const String& var){
   return String();
 }
 
-int batteryChargeMultiplier(){
+int batteryChargeLedOffInterval(){
     if( BL.getBatteryChargeLevel() < 1 ){
-        return 1;
+        return 100;
     }
-    return BL.getBatteryChargeLevel();
-    
+    return 100 * BL.getBatteryChargeLevel();
 }
+
 String optionsList(byte pedal){
     int selected;
     if( pedal == 1 ){
@@ -222,12 +222,12 @@ void setup(void)
     delay(1000);
     digitalWrite(STATUS_LED_PIN, HIGH);
     
-    Serial.print("Ped1: ");
+    Serial.print("Ped1 sends: ");
     Serial.println(key_options[preferences.getInt("pedal1", PEDAL1_DEFAULT_KEY_INDEX)].label);
-    Serial.print("Ped2: ");
+    Serial.print("Ped2 sends: ");
     Serial.println(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].label);
     
-    status_led_off_interval = 100 * batteryChargeMultiplier();
+    status_led_off_interval = batteryChargeLedOffInterval();
     // status_led_off_interval = 100 * 1;
     status_led_on_interval = 200;
     status_led_flag = LOW;
@@ -405,16 +405,12 @@ void loop(void)
 
   if(  millis() > batCheckTime ){
     batCheckTime = millis() + BAT_POLLING_INTERVAL;
-    // Serial.print("Value from pin: ");
-    // Serial.println(analogRead(34));
-    // Serial.print("Average value from pin: ");
-    // Serial.println(BL.pinRead());
-    // Serial.print("Volts: ");
-    // Serial.println(BL.getBatteryVolts());
-    // Serial.print("Charge level: ");
-    // Serial.println(BL.getBatteryChargeLevel());
-    // Serial.println("");
-    status_led_off_interval = 100 * batteryChargeMultiplier();
+    Serial.print("Volts: ");
+    Serial.println(BL.getBatteryVolts());
+    Serial.print("Charge level: ");
+    Serial.println(BL.getBatteryChargeLevel());
+
+    status_led_off_interval = batteryChargeLedOffInterval();
     bleKeyboard.setBatteryLevel(BL.getBatteryChargeLevel());
   }
 
