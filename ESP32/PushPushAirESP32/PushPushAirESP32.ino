@@ -314,42 +314,49 @@ void setup(void)
     });
     
     
-    // To reset to factory presets keep pressed the pedal 1 while turning on the device
-    // then press the pedal 2
+    // To reset to factory presets press the pedal 1 and pedal 2 while turning on the device
+    // the status led blinks fast
+    // keep the buttons pressed for 5 seconds until the led stays on
+    // now the password is reset to the factory one.
+    
     ped_prev.update();
+    ped_next.update();
+    
     long reset_btn_on_time = millis();
-    byte reset_btn_led = 1;
-    byte im_resetting = false;
+    long reset_wait = millis();
+    byte reset_btn_led = HIGH;
+    byte password_reset_done = false;
 
-    while (ped_prev.read() == 0){
-        Serial.println("Waiting for Pedal 2 to start password reset ");
-      digitalWrite(STATUS_LED_PIN, reset_btn_led); 
-      if( millis()-reset_btn_on_time > 200 && !im_resetting ){
-          digitalWrite(STATUS_LED_PIN, !reset_btn_led);
-          reset_btn_led = !reset_btn_led;
-        reset_btn_on_time = millis();
-      }
-       ped_prev.update();
-       ped_next.update();
-
-      if (ped_next.fell()){ // the pedal 2 button was pressed: let's start the reset procedure
-        Serial.println("Starting password reset ");
-         digitalWrite(STATUS_LED_PIN, HIGH); //keep the led on to signal that the reset procedure is starting
-         im_resetting = true; //don't blink animore
-         
-         Serial.println("Reset passowrd to");
-         Serial.println(PASSWORD_DEFAULT);
-         
-         String rpassword = PASSWORD_DEFAULT;
-         const char *wrpassword = rpassword.c_str();
-         preferences.putString("password", wrpassword);
-
-         delay(3000);
-
-         Serial.println("Password reset done");
-         // turn the led off when the write procedure finish
-         digitalWrite(STATUS_LED_PIN, LOW);
-      }
+    if (ped_next.read() == 0 && ped_next.read() == 0){
+        Serial.println("Waiting for password factory reset. Keep the buttons pressed for 5 seconds");
+        
+        while (ped_next.read() == 0 && ped_next.read() == 0 && ! password_reset_done ) {
+            // digitalWrite(STATUS_LED_PIN, reset_btn_led );
+            if( millis() - reset_wait < 5000 ){
+                if( millis()-reset_btn_on_time > 50){
+                    reset_btn_led = !reset_btn_led;
+                    digitalWrite(STATUS_LED_PIN, reset_btn_led);
+                    reset_btn_on_time = millis();
+                    Serial.print(".");
+                }
+            }
+            else{
+                digitalWrite(STATUS_LED_PIN, HIGH); //keep the led on to signal that the reset procedure is starting
+                Serial.println("Reset passowrd to");
+                Serial.println(PASSWORD_DEFAULT);
+                
+                String rpassword = PASSWORD_DEFAULT;
+                const char *wrpassword = rpassword.c_str();
+                preferences.putString("password", wrpassword);
+       
+                delay(2000);
+       
+                Serial.println("Password reset done");
+                password_reset_done = true; 
+                // turn the led off when the write procedure finish
+                digitalWrite(STATUS_LED_PIN, LOW);
+            }
+        }
     }
     
 }
