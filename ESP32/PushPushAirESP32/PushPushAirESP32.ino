@@ -181,13 +181,15 @@ static void SendKey( byte pedal ){
     switch( pedal ){
       case PEDAL1_PIN:
           bleKeyboard.press(key_options[preferences.getInt("pedal1", PEDAL1_DEFAULT_KEY_INDEX)].value);
+          Serial.println(key_options[preferences.getInt("pedal1", PEDAL1_DEFAULT_KEY_INDEX)].label);
       break; 
       case PEDAL2_PIN:
           bleKeyboard.press(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].value);
+          Serial.println(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].label);
       break; 
     }
     
-    Serial.println(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].label);
+    
     delay(100);
     bleKeyboard.releaseAll();
   }
@@ -314,7 +316,7 @@ void setup(void)
     });
     
     
-    // To reset to factory presets press the pedal 1 and pedal 2 while turning on the device
+    // To reset to factory password press the pedal 1 and pedal 2 while turning on the device
     // the status led blinks fast
     // keep the buttons pressed for 5 seconds until the led stays on
     // now the password is reset to the factory one.
