@@ -47,8 +47,8 @@ String ssid = "";
 String password = "";
 
 // Pin per i Pulsanti
-const byte PEDAL1_PIN = 21;
-const byte PEDAL2_PIN = 23;
+const byte PEDAL1_PIN = 23;
+const byte PEDAL2_PIN = 21;
 
 // Led
 const byte PEDAL1_LED_PIN = LED_BUILTIN;
@@ -56,9 +56,9 @@ const byte PEDAL2_LED_PIN = LED_BUILTIN;
 const byte STATUS_LED_PIN = LED_BUILTIN;
 
 // Instantiate a Bounce object
-Bounce ped_next = Bounce(); 
+Bounce ped_2 = Bounce(); 
 // Instantiate another Bounce object
-Bounce ped_prev = Bounce(); 
+Bounce ped_1 = Bounce(); 
 
 // Chek the battery status every BAT_POLLING_INTERVAL milliseconds
 unsigned long batCheckTime;
@@ -77,7 +77,7 @@ byte ap_started = false; // true when in configuration mode and Access Point is 
 const char index_html[] PROGMEM = R"rawliteral(
 %HEAD_PLACEHODER%
 <body>
-  <h2>PushPush AIR Configuration v10</h2>
+  <h2>PushPush AIR2 Configuration</h2>
   <form action="/save">
   %SELECT_PLACEHODER%
   <br>
@@ -208,8 +208,8 @@ void setup(void)
     pinMode(PEDAL1_PIN, INPUT_PULLUP);
     pinMode(PEDAL2_PIN, INPUT_PULLUP);
     
-    ped_next.attach(PEDAL2_PIN);
-    ped_prev.attach(PEDAL1_PIN);
+    ped_2.attach(PEDAL2_PIN);
+    ped_1.attach(PEDAL1_PIN);
 
     // OUTPUTS /LEDS
     pinMode(PEDAL1_LED_PIN, OUTPUT);
@@ -228,17 +228,23 @@ void setup(void)
     Serial.println(key_options[preferences.getInt("pedal1", PEDAL1_DEFAULT_KEY_INDEX)].label);
     Serial.print("Ped2 sends: ");
     Serial.println(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].label);
+    Serial.print("Password: ");
+    // password = preferences.getString("password", PASSWORD_DEFAULT);
+    // 
+    // const char *wpassword = password.c_str();
+
+    Serial.println(preferences.getString("password", PASSWORD_DEFAULT));
     
     status_led_off_interval = batteryChargeLedOffInterval();
     // status_led_off_interval = 100 * 1;
     status_led_on_interval = 200;
     status_led_flag = LOW;
     
-    
-    ped_next.update();    
+    ped_1.update();
+    ped_2.update();    
     
     // start the access point to do the configuration when the device is started while pushing pedal 2
-    if (ped_next.read() == 0){
+    if (ped_2.read() == 0 && ped_1.read() != 0 ){
         Serial.println("Starting WiFI accessPoint...");
         
           digitalWrite(STATUS_LED_PIN, LOW); 
@@ -264,6 +270,51 @@ void setup(void)
           server.begin();
           ap_started = true;
           Serial.println("Access Point Started");
+    }
+    
+    // To reset to factory password press the pedal 1 and pedal 2 while turning on the device
+    // the status led blinks fast
+    // keep the buttons pressed for 5 seconds until the led stays on
+    // now the password is reset to the factory one.
+    
+    ped_1.update();
+    ped_2.update();
+    
+    long reset_btn_on_time = millis();
+    long reset_wait = millis();
+    byte reset_btn_led = HIGH;
+    byte password_reset_done = false;
+
+    if (ped_2.read() == 0 && ped_1.read() == 0){
+        Serial.println("Waiting for password factory reset. Keep the buttons pressed for 5 seconds");
+        
+        while (ped_2.read() == 0 && ped_1.read() == 0 && ! password_reset_done ) {
+            // digitalWrite(STATUS_LED_PIN, reset_btn_led );
+            if( millis() - reset_wait < 5000 ){
+                if( millis()-reset_btn_on_time > 50){
+                    reset_btn_led = !reset_btn_led;
+                    digitalWrite(STATUS_LED_PIN, reset_btn_led);
+                    reset_btn_on_time = millis();
+                    Serial.print(".");
+                }
+            }
+            else{
+                digitalWrite(STATUS_LED_PIN, HIGH); //keep the led on to signal that the reset procedure is starting
+                Serial.println("Reset passowrd to");
+                Serial.println(PASSWORD_DEFAULT);
+                
+                String rpassword = PASSWORD_DEFAULT;
+                const char *wrpassword = rpassword.c_str();
+                preferences.putString("password", wrpassword);
+       
+                delay(2000);
+       
+                Serial.println("Password reset done");
+                password_reset_done = true; 
+                // turn the led off when the write procedure finish
+                digitalWrite(STATUS_LED_PIN, LOW);
+            }
+        }
     }
     
     // Route for root / web page
@@ -315,52 +366,6 @@ void setup(void)
       request->send_P(200, "text/html", save_html, processor);
     });
     
-    
-    // To reset to factory password press the pedal 1 and pedal 2 while turning on the device
-    // the status led blinks fast
-    // keep the buttons pressed for 5 seconds until the led stays on
-    // now the password is reset to the factory one.
-    
-    ped_prev.update();
-    ped_next.update();
-    
-    long reset_btn_on_time = millis();
-    long reset_wait = millis();
-    byte reset_btn_led = HIGH;
-    byte password_reset_done = false;
-
-    if (ped_next.read() == 0 && ped_next.read() == 0){
-        Serial.println("Waiting for password factory reset. Keep the buttons pressed for 5 seconds");
-        
-        while (ped_next.read() == 0 && ped_next.read() == 0 && ! password_reset_done ) {
-            // digitalWrite(STATUS_LED_PIN, reset_btn_led );
-            if( millis() - reset_wait < 5000 ){
-                if( millis()-reset_btn_on_time > 50){
-                    reset_btn_led = !reset_btn_led;
-                    digitalWrite(STATUS_LED_PIN, reset_btn_led);
-                    reset_btn_on_time = millis();
-                    Serial.print(".");
-                }
-            }
-            else{
-                digitalWrite(STATUS_LED_PIN, HIGH); //keep the led on to signal that the reset procedure is starting
-                Serial.println("Reset passowrd to");
-                Serial.println(PASSWORD_DEFAULT);
-                
-                String rpassword = PASSWORD_DEFAULT;
-                const char *wrpassword = rpassword.c_str();
-                preferences.putString("password", wrpassword);
-       
-                delay(2000);
-       
-                Serial.println("Password reset done");
-                password_reset_done = true; 
-                // turn the led off when the write procedure finish
-                digitalWrite(STATUS_LED_PIN, LOW);
-            }
-        }
-    }
-    
 }
 
 void loop(void)
@@ -386,29 +391,29 @@ void loop(void)
       static uint8_t pedalNEXTStateLast = HIGH;
       static uint8_t pedalPREVStateLast = HIGH;
       uint8_t pedalState;
-      ped_next.update();
-      ped_prev.update();
+      ped_2.update();
+      ped_1.update();
     
-      pedalState = ped_next.read();
+      pedalState = ped_2.read();
       if (pedalState != pedalNEXTStateLast) {
           pedalNEXTStateLast = pedalState;
           
-          if (pedalState == LOW ) {
-              Serial.print("Pushed pedal 1");
-              SendKey( PEDAL1_PIN );
-          }
-          digitalWrite(PEDAL1_LED_PIN, pedalState );
-      }
-  
-      pedalState = ped_prev.read();
-      if (pedalState != pedalPREVStateLast) {
-          pedalPREVStateLast = pedalState;
-  
           if (pedalState == LOW ) {
               Serial.print("Pushed pedal 2");
               SendKey( PEDAL2_PIN );
           }
           digitalWrite(PEDAL2_LED_PIN, pedalState );
+      }
+  
+      pedalState = ped_1.read();
+      if (pedalState != pedalPREVStateLast) {
+          pedalPREVStateLast = pedalState;
+  
+          if (pedalState == LOW ) {
+              Serial.print("Pushed pedal 1");
+              SendKey( PEDAL1_PIN );
+          }
+          digitalWrite(PEDAL1_LED_PIN, pedalState );
       }
     }
 

@@ -16,7 +16,7 @@ Configurable via WiFI (you can choose the keystrokes that you want to send)
 - Out of the box PushPushAIR is configured to send the key cursor left and right. Check the app that you want to control and, if it needs different keys, go to the Configuration section and change the keystrokes sent.
 
 ## Configuration ##
-- Turn on the PPA while pushing the left-most pedal.
+- Turn on the PPA while pushing the right-most pedal.
 - The status led will be steady blue.
 - Now connect from a computer or mobile device to the wifi network "Push Push AIR" and insert the passord
 - Once the connection is etablished, browse to 192.168.4.1 to use the configuration page.
