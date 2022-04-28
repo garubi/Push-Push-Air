@@ -14,6 +14,7 @@ Pangodream_18650_CL BL;
 String init_bleName = SSID_DEFAULT;
 const char *winit_bleName = init_bleName.c_str();
 BleKeyboard bleKeyboard(winit_bleName, "UBI Stage", BL.getBatteryChargeLevel());
+const char SoftwareVersion = "2.0.0";
 
 #include <Bounce2.h>
 
@@ -224,6 +225,9 @@ void setup(void)
     delay(1000);
     digitalWrite(STATUS_LED_PIN, HIGH);
     
+    Serial.println("Welcome to PushPushAir2");
+    Serial.print("Firmware version: ");
+    Serial.println(SoftwareVersion);
     Serial.print("Ped1 sends: ");
     Serial.println(key_options[preferences.getInt("pedal1", PEDAL1_DEFAULT_KEY_INDEX)].label);
     Serial.print("Ped2 sends: ");
