@@ -200,7 +200,6 @@ static void SendKey( byte pedal ){
           Serial.println(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].label);
       break; 
     }
-    delay(100);
     bleKeyboard.releaseAll();
   }
 }
