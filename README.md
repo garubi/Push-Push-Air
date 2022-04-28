@@ -24,6 +24,12 @@ Configurable via WiFI (you can choose the keystrokes that you want to send)
  - The device name that idetify the Push Push AIR on WiFI and Bluethooth (you need to restart the device in order to render effective the name's change)
  - The passowrd to access the configuration page
  - The characters sent by the pedals
+- Click on Save to store your new configuration
+- Please remember to click on "Finish" when you are done with the setup: in this way the WiFI access point will be closed (the led turns off). This is important for two reasons:
+ - It will save on battery charge
+ - No one (even if he has your password) will be able to change the settings during your performance ;-)
+ 
+Please note that after 5 minutes from the last click un the buttons in the configuration page, the Push Push AIR turns off automatically
  
 ### Reset the password to the factory one ###
  If you change the password of the Configuration page and you forget it, you can revert to the factory one: `12345678`

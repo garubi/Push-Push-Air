@@ -82,6 +82,8 @@ AsyncWebServer server(80);
 String ssid = "";
 String password = "";
 byte ap_started = false; // true when in configuration mode and Access Point is ON
+const unsigned int CONFIG_MAX_IDLE_TIME = 1000 * 60 * 5; // millisecons of configuration inactivity after that we turn off the access point
+unsigned long lastConfigActivityTime;
 
 const char index_html[] PROGMEM = R"rawliteral(
 %HEAD_PLACEHODER%
@@ -176,6 +178,16 @@ String optionsList(byte pedal){
     return list;
 }
 
+void shutDownServer(){
+    WiFi.softAPdisconnect(true);
+    server.end();
+
+    Serial.println("Access Point closed");
+    // turn the led off when the Access Point is disconnected
+    ap_started = false;
+    digitalWrite(STATUS_LED_PIN, HIGH );
+}
+
 /* send the keypress via BLE */
 static void SendKey( byte pedal ){
   if (bleKeyboard.isConnected()) {
@@ -266,6 +278,7 @@ void setup(void)
           // Start server
           server.begin();
           ap_started = true;
+          lastConfigActivityTime = millis();
           Serial.println("Access Point Started");
     }
     
@@ -305,22 +318,17 @@ void setup(void)
         }
     }
     
-    /* Web configuration resposnse pèages and action */
+    /* Web configuration resposnse pages and action */
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send_P(200, "text/html", index_html, processor);
+        request->send_P(200, "text/html", index_html, processor);
+        lastConfigActivityTime = millis();
     });
     
     server.on("/end", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(200, "text/plain", "Connection closed.");
-      WiFi.softAPdisconnect(true);
-      server.end();
-        
-      Serial.println("Access Point closed");
-      // turn the led off when the Access Point is disconnected
-      ap_started = false;
-      digitalWrite(STATUS_LED_PIN, HIGH );
+        request->send(200, "text/plain", "Connection closed.");
+        shutDownServer();
     });
-    
+
     server.on("/save", HTTP_GET, [](AsyncWebServerRequest *request){
         if(request->hasParam("devicename")){
             String devicename;
@@ -351,7 +359,8 @@ void setup(void)
             preferences.putInt("pedal2", pedal2.toInt());
 
         }
-      request->send_P(200, "text/html", save_html, processor);
+        lastConfigActivityTime = millis();
+        request->send_P(200, "text/html", save_html, processor);
     });
     
 }
@@ -372,6 +381,12 @@ void loop(void)
     }
     else{
         digitalWrite(STATUS_LED_PIN, LOW );
+        if(millis() - lastConfigActivityTime > CONFIG_MAX_IDLE_TIME ){
+            // we are on the same WebConfig page for more than CONFIG_MAX_IDLE_TIME
+            // so we shut down the server
+            Serial.println("Web Configuration timeout");
+            shutDownServer();
+        }
     }
 
     if(  millis() > btnReadingSettle ){
