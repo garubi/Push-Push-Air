@@ -216,10 +216,8 @@ void setup(void)
     bleKeyboard.begin();
     
     // BUTTONS / INPUTS
-    pinMode(PEDAL1_PIN, INPUT_PULLUP);
-    pinMode(PEDAL2_PIN, INPUT_PULLUP);
-    ped_2.attach(PEDAL2_PIN);
-    ped_1.attach(PEDAL1_PIN);
+    ped_2.attach(PEDAL2_PIN, INPUT_PULLUP);
+    ped_1.attach(PEDAL1_PIN, INPUT_PULLUP);
 
     // OUTPUTS /LEDS
     pinMode(PEDAL1_LED_PIN, OUTPUT);
