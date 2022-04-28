@@ -1,29 +1,60 @@
-// Default preferences
+/*
+    Name: Push Push AIR2
+    Author: Stefano Garuti
+    Link: https://github.com/garubi/Push-Push-Air
+    Hardware version: 2.0
+*/
+const char SoftwareVersion[] = "2.0.0";
+ 
+/* Pedals/Buttons connections */
+// Pin per i Pulsanti
+const byte PEDAL1_PIN = 23;
+const byte PEDAL2_PIN = 21;
+
+#include <Bounce2.h>
+Bounce ped_2 = Bounce(); 
+Bounce ped_1 = Bounce(); 
+unsigned long btnReadingSettle;
+
+/* Leds connections */
+const byte PEDAL1_LED_PIN = LED_BUILTIN;
+const byte PEDAL2_LED_PIN = LED_BUILTIN;
+const byte STATUS_LED_PIN = LED_BUILTIN;
+// Manage the status led (it will blink faster as the battery level will go down)
+int status_led_off_interval;
+int status_led_on_interval;
+unsigned long status_led_change_time;
+byte status_led_flag;
+
+/* Device's configurable preferences */
+#include <Preferences.h>
+Preferences preferences;
+// Default preferences :
 const byte PEDAL1_DEFAULT_KEY_INDEX = 2; // it's the KEY_LEFT_ARROW in the key_options[] sturct
 const byte PEDAL2_DEFAULT_KEY_INDEX = 3; // it's the KEY_RIGHT_ARROW in the key_options[] sturct
 const String PASSWORD_DEFAULT = "12345678";
 const String SSID_DEFAULT = "PushPushAIR2";
 
-#include <Preferences.h>
-Preferences preferences;
-
+/* Battery charge checking */
 #include <Pangodream_18650_CL.h>
 Pangodream_18650_CL BL;
+unsigned long batCheckTime;
+const int BAT_POLLING_INTERVAL = 5000; // Chek the battery status every BAT_POLLING_INTERVAL milliseconds
+// Calculate the the led's blinking frequency based on the battery charge levele
+int batteryChargeLedOffInterval(){
+    if( BL.getBatteryChargeLevel() < 1 ){
+        return 100;
+    }
+    return 100 * BL.getBatteryChargeLevel();
+}
 
+/* The device's will appear as a Bluethooth keyboard */
 #include <BleKeyboard.h>
 String init_bleName = SSID_DEFAULT;
 const char *winit_bleName = init_bleName.c_str();
 BleKeyboard bleKeyboard(winit_bleName, "UBI Stage", BL.getBatteryChargeLevel());
-const char SoftwareVersion = "2.0.0";
 
-#include <Bounce2.h>
-
-#include <WiFi.h>
-#include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-
-AsyncWebServer server(80);
-
+/* The keys we cen send.. */
 struct Key_options {
     String label; //char can also be a fixed length string like char fruit[16];
     uint8_t value;
@@ -41,38 +72,15 @@ struct Key_options {
     {"KEY_HOME" , KEY_HOME},
     {"KEY_END" , KEY_END},
 };
-
 const int key_options_num = sizeof(key_options) / sizeof(key_options[0]);
 
+/* WiFI and webserver settings for preferences configuration */
+#include <WiFi.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+AsyncWebServer server(80);
 String ssid = "";
 String password = "";
-
-// Pin per i Pulsanti
-const byte PEDAL1_PIN = 23;
-const byte PEDAL2_PIN = 21;
-
-// Led
-const byte PEDAL1_LED_PIN = LED_BUILTIN;
-const byte PEDAL2_LED_PIN = LED_BUILTIN;
-const byte STATUS_LED_PIN = LED_BUILTIN;
-
-// Instantiate a Bounce object
-Bounce ped_2 = Bounce(); 
-// Instantiate another Bounce object
-Bounce ped_1 = Bounce(); 
-
-// Chek the battery status every BAT_POLLING_INTERVAL milliseconds
-unsigned long batCheckTime;
-const int BAT_POLLING_INTERVAL = 5000;
-
-unsigned long btnReadingSettle;
-
-// Manage the status led (it will blink faster as the battery level will go down)
-int status_led_off_interval;
-int status_led_on_interval;
-unsigned long status_led_change_time;
-byte status_led_flag;
-
 byte ap_started = false; // true when in configuration mode and Access Point is ON
 
 const char index_html[] PROGMEM = R"rawliteral(
@@ -145,13 +153,6 @@ String processor(const String& var){
   return String();
 }
 
-int batteryChargeLedOffInterval(){
-    if( BL.getBatteryChargeLevel() < 1 ){
-        return 100;
-    }
-    return 100 * BL.getBatteryChargeLevel();
-}
-
 String optionsList(byte pedal){
     int selected;
     if( pedal == 1 ){
@@ -160,9 +161,7 @@ String optionsList(byte pedal){
     else{
         selected = preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX);
     }
-    
     String list = "";
-    
     for(int prs = 0; prs < key_options_num; prs++){
         list.concat("<option value=\"");
         list.concat(prs);
@@ -177,6 +176,7 @@ String optionsList(byte pedal){
     return list;
 }
 
+/* send the keypress via BLE */
 static void SendKey( byte pedal ){
   if (bleKeyboard.isConnected()) {
     switch( pedal ){
@@ -189,8 +189,6 @@ static void SendKey( byte pedal ){
           Serial.println(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].label);
       break; 
     }
-    
-    
     delay(100);
     bleKeyboard.releaseAll();
   }
@@ -208,7 +206,6 @@ void setup(void)
     // BUTTONS / INPUTS
     pinMode(PEDAL1_PIN, INPUT_PULLUP);
     pinMode(PEDAL2_PIN, INPUT_PULLUP);
-    
     ped_2.attach(PEDAL2_PIN);
     ped_1.attach(PEDAL1_PIN);
 
@@ -217,10 +214,12 @@ void setup(void)
     pinMode(PEDAL2_LED_PIN, OUTPUT);
     pinMode(STATUS_LED_PIN, OUTPUT);
     
-    Serial.begin(115200);
+    Serial.begin(115200); // for feedback and debug
 //    Serial.setDebugOutput(true);
 //    Serial.print("ESP32 SDK: ");
 //    Serial.println(ESP.getSdkVersion());
+
+    /* At the starts, the led will be on for 1 second */
     digitalWrite(STATUS_LED_PIN, LOW);
     delay(1000);
     digitalWrite(STATUS_LED_PIN, HIGH);
@@ -233,21 +232,15 @@ void setup(void)
     Serial.print("Ped2 sends: ");
     Serial.println(key_options[preferences.getInt("pedal2", PEDAL2_DEFAULT_KEY_INDEX)].label);
     Serial.print("Password: ");
-    // password = preferences.getString("password", PASSWORD_DEFAULT);
-    // 
-    // const char *wpassword = password.c_str();
-
     Serial.println(preferences.getString("password", PASSWORD_DEFAULT));
     
     status_led_off_interval = batteryChargeLedOffInterval();
-    // status_led_off_interval = 100 * 1;
     status_led_on_interval = 200;
     status_led_flag = LOW;
     
+    // start the access point to do the configuration when the device is started while pushing pedal 2
     ped_1.update();
     ped_2.update();    
-    
-    // start the access point to do the configuration when the device is started while pushing pedal 2
     if (ped_2.read() == 0 && ped_1.read() != 0 ){
         Serial.println("Starting WiFI accessPoint...");
         
@@ -280,20 +273,15 @@ void setup(void)
     // the status led blinks fast
     // keep the buttons pressed for 5 seconds until the led stays on
     // now the password is reset to the factory one.
-    
     ped_1.update();
     ped_2.update();
-    
     long reset_btn_on_time = millis();
     long reset_wait = millis();
     byte reset_btn_led = HIGH;
     byte password_reset_done = false;
-
     if (ped_2.read() == 0 && ped_1.read() == 0){
         Serial.println("Waiting for password factory reset. Keep the buttons pressed for 5 seconds");
-        
         while (ped_2.read() == 0 && ped_1.read() == 0 && ! password_reset_done ) {
-            // digitalWrite(STATUS_LED_PIN, reset_btn_led );
             if( millis() - reset_wait < 5000 ){
                 if( millis()-reset_btn_on_time > 50){
                     reset_btn_led = !reset_btn_led;
@@ -306,22 +294,18 @@ void setup(void)
                 digitalWrite(STATUS_LED_PIN, HIGH); //keep the led on to signal that the reset procedure is starting
                 Serial.println("Reset passowrd to");
                 Serial.println(PASSWORD_DEFAULT);
-                
                 String rpassword = PASSWORD_DEFAULT;
                 const char *wrpassword = rpassword.c_str();
                 preferences.putString("password", wrpassword);
-       
                 delay(2000);
-       
                 Serial.println("Password reset done");
                 password_reset_done = true; 
-                // turn the led off when the write procedure finish
                 digitalWrite(STATUS_LED_PIN, LOW);
             }
         }
     }
     
-    // Route for root / web page
+    /* Web configuration resposnse pèages and action */
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
       request->send_P(200, "text/html", index_html, processor);
     });
@@ -420,16 +404,16 @@ void loop(void)
           digitalWrite(PEDAL1_LED_PIN, pedalState );
       }
     }
+    /* every BAT_POLLING_INTERVAL we check the battery charge */
+    if(  millis() > batCheckTime ){
+        batCheckTime = millis() + BAT_POLLING_INTERVAL;
+        Serial.print("Volts: ");
+        Serial.println(BL.getBatteryVolts());
+        Serial.print("Charge level: ");
+        Serial.println(BL.getBatteryChargeLevel());
 
-  if(  millis() > batCheckTime ){
-    batCheckTime = millis() + BAT_POLLING_INTERVAL;
-    Serial.print("Volts: ");
-    Serial.println(BL.getBatteryVolts());
-    Serial.print("Charge level: ");
-    Serial.println(BL.getBatteryChargeLevel());
-
-    status_led_off_interval = batteryChargeLedOffInterval();
-    bleKeyboard.setBatteryLevel(BL.getBatteryChargeLevel());
-  }
+        status_led_off_interval = batteryChargeLedOffInterval();
+        bleKeyboard.setBatteryLevel(BL.getBatteryChargeLevel());
+    }
 
 }
