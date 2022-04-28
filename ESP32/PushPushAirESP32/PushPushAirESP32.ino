@@ -14,7 +14,6 @@ const byte PEDAL2_PIN = 21;
 #include <Bounce2.h>
 Bounce ped_2 = Bounce(); 
 Bounce ped_1 = Bounce(); 
-unsigned long btnReadingSettle;
 
 /* Leds connections */
 const byte PEDAL1_LED_PIN = LED_BUILTIN;
@@ -387,36 +386,28 @@ void loop(void)
         }
     }
 
-    if(  millis() > btnReadingSettle ){
-      btnReadingSettle = millis() + 50;
-      static uint8_t pedalNEXTStateLast = HIGH;
-      static uint8_t pedalPREVStateLast = HIGH;
-      uint8_t pedalState;
-      ped_2.update();
-      ped_1.update();
-    
-      pedalState = ped_2.read();
-      if (pedalState != pedalNEXTStateLast) {
-          pedalNEXTStateLast = pedalState;
-          
-          if (pedalState == LOW ) {
-              Serial.print("Pushed pedal 2");
-              SendKey( PEDAL2_PIN );
-          }
-          digitalWrite(PEDAL2_LED_PIN, pedalState );
-      }
-  
-      pedalState = ped_1.read();
-      if (pedalState != pedalPREVStateLast) {
-          pedalPREVStateLast = pedalState;
-  
-          if (pedalState == LOW ) {
-              Serial.print("Pushed pedal 1");
-              SendKey( PEDAL1_PIN );
-          }
-          digitalWrite(PEDAL1_LED_PIN, pedalState );
-      }
+
+    uint8_t pedalState;
+    ped_2.update();
+    ped_1.update();
+    if ( ped_2.changed() ) { 
+        pedalState = ped_2.read();
+        if (pedalState == LOW ) {
+          Serial.print("Pushed pedal 2");
+          SendKey( PEDAL2_PIN );
+        }
+        digitalWrite(PEDAL2_LED_PIN, pedalState );
     }
+
+    if ( ped_1.changed() ) { 
+        pedalState = ped_1.read();
+        if (pedalState == LOW ) {
+            Serial.print("Pushed pedal 1");
+            SendKey( PEDAL1_PIN );
+        }
+        digitalWrite(PEDAL1_LED_PIN, pedalState );
+    }
+
     /* every BAT_POLLING_INTERVAL we check the battery charge */
     if(  millis() > batCheckTime ){
         batCheckTime = millis() + BAT_POLLING_INTERVAL;
