@@ -15,7 +15,7 @@ Configurable via WiFI (you can choose the keystrokes that you want to send)
 - PushPushAIR will appear and act as a remote Bluethooth keyboard
 - Out of the box PushPushAIR is configured to send the key cursor left and right. Check the app that you want to control and, if it needs different keys, go to the Configuration section and change the keystrokes sent.
 
-## Configuration ##
+### Configuration ###
 - Turn on the PPA while pushing the right-most pedal.
 - The status led will be steady blue.
 - Now connect from a computer or mobile device to the wifi network "Push Push AIR" and insert the passord
@@ -25,7 +25,7 @@ Configurable via WiFI (you can choose the keystrokes that you want to send)
  - The passowrd to access the configuration page
  - The characters sent by the pedals
  
-## Reset the password to the factory one ##
+### Reset the password to the factory one ###
  If you change the password of the Configuration page and you forget it, you can revert to the factory one: `12345678`
  **How to reset:**
  - Turn on the PPA while pushing both pedals. The Status led starts blink fast
@@ -33,8 +33,10 @@ Configurable via WiFI (you can choose the keystrokes that you want to send)
  - Wait 2/3 seconds untile the led turns off.
  - The reset is now complete. 
  
- 
- 
+## Making it ##
+I used a board that have the 18650 battery and charger included like this:
+https://wiki.geekworm.com/index.php/WEMOS_ESP32_Board_with_18650_Battery_Holder
+see References folder for pictures and pinout
  
  
 Libraries used:
