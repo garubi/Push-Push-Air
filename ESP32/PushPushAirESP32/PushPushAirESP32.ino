@@ -227,7 +227,7 @@ void setup(void)
 //    Serial.print("ESP32 SDK: ");
 //    Serial.println(ESP.getSdkVersion());
 
-    /* At the starts, the led will be on for 1 second */
+    /* At startup, the led will be on for 1 second */
     digitalWrite(STATUS_LED_PIN, LOW);
     delay(1000);
     digitalWrite(STATUS_LED_PIN, HIGH);
@@ -248,7 +248,12 @@ void setup(void)
     
     // start the access point to do the configuration when the device is started while pushing pedal 2
     ped_1.update();
-    ped_2.update();    
+    ped_2.update(); 
+    Serial.print("ped 1");
+    Serial.println(ped_1.read());   
+    Serial.print("ped 2");
+    Serial.println(ped_2.read());
+
     if (ped_2.read() == 0 && ped_1.read() != 0 ){
         Serial.println("Starting WiFI accessPoint...");
         
@@ -290,7 +295,7 @@ void setup(void)
     byte password_reset_done = false;
     if (ped_2.read() == 0 && ped_1.read() == 0){
         Serial.println("Waiting for password factory reset. Keep the buttons pressed for 5 seconds");
-        while (ped_2.read() == 0 && ped_1.read() == 0 && ! password_reset_done ) {
+        while (ped_2.read() == 0 && ped_1.read() != 0 && ! password_reset_done ) {
             if( millis() - reset_wait < 5000 ){
                 if( millis()-reset_btn_on_time > 50){
                     reset_btn_led = !reset_btn_led;
