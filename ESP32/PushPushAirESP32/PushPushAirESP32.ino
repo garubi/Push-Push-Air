@@ -249,9 +249,10 @@ void setup(void)
     // start the access point to do the configuration when the device is started while pushing pedal 2
     ped_1.update();
     ped_2.update(); 
-    Serial.print("ped 1");
+
+    Serial.print("ped 1: ");
     Serial.println(ped_1.read());   
-    Serial.print("ped 2");
+    Serial.print("ped 2: ");
     Serial.println(ped_2.read());
 
     if (ped_2.read() == 0 && ped_1.read() != 0 ){
@@ -295,7 +296,7 @@ void setup(void)
     byte password_reset_done = false;
     if (ped_2.read() == 0 && ped_1.read() == 0){
         Serial.println("Waiting for password factory reset. Keep the buttons pressed for 5 seconds");
-        while (ped_2.read() == 0 && ped_1.read() != 0 && ! password_reset_done ) {
+        while (ped_2.read() == 0 && ped_1.read() == 0 && ! password_reset_done ) {
             if( millis() - reset_wait < 5000 ){
                 if( millis()-reset_btn_on_time > 50){
                     reset_btn_led = !reset_btn_led;
@@ -316,6 +317,8 @@ void setup(void)
                 password_reset_done = true; 
                 digitalWrite(STATUS_LED_PIN, LOW);
             }
+            ped_1.update();
+            ped_2.update();
         }
     }
     
