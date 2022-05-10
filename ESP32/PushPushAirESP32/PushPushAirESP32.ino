@@ -216,7 +216,8 @@ void setup(void)
     // BUTTONS / INPUTS
     ped_2.attach(PEDAL2_PIN, INPUT_PULLUP);
     ped_1.attach(PEDAL1_PIN, INPUT_PULLUP);
-
+    ped_2.interval(50);
+    ped_1.interval(50);
     // OUTPUTS /LEDS
     pinMode(PEDAL1_LED_PIN, OUTPUT);
     pinMode(PEDAL2_LED_PIN, OUTPUT);
@@ -250,51 +251,24 @@ void setup(void)
     ped_1.update();
     ped_2.update(); 
 
+    
     Serial.print("ped 1: ");
     Serial.println(ped_1.read());   
     Serial.print("ped 2: ");
     Serial.println(ped_2.read());
 
-    if (ped_2.read() == 0 && ped_1.read() != 0 ){
-        Serial.println("Starting WiFI accessPoint...");
-        
-          digitalWrite(STATUS_LED_PIN, LOW); 
-          
-          Serial.println("Setting AP (Access Point)…");
-          ssid = preferences.getString("ssid", SSID_DEFAULT); 
-          password = preferences.getString("password", PASSWORD_DEFAULT);
-          
-          const char *wpassword = password.c_str();
-          const char *wssid = ssid.c_str();
-          
-          WiFi.softAP(wssid, wpassword);
-
-          IPAddress IP = WiFi.softAPIP();
-          Serial.print("AP IP address: ");
-          Serial.println(IP);
-          Serial.print("AP SSID: ");
-          Serial.println(wssid);
-          Serial.print("AP password: ");
-          Serial.println(wpassword);
-      
-          // Start server
-          server.begin();
-          ap_started = true;
-          lastConfigActivityTime = millis();
-          Serial.println("Access Point Started");
-    }
     
-    // To reset to factory password press the pedal 1 and pedal 2 while turning on the device
-    // the status led blinks fast
-    // keep the buttons pressed for 5 seconds until the led stays on
-    // now the password is reset to the factory one.
-    ped_1.update();
-    ped_2.update();
-    long reset_btn_on_time = millis();
-    long reset_wait = millis();
-    byte reset_btn_led = HIGH;
-    byte password_reset_done = false;
+    
     if (ped_2.read() == 0 && ped_1.read() == 0){
+        // To reset to factory password press the pedal 1 and pedal 2 while turning on the device
+        // the status led blinks fast
+        // keep the buttons pressed for 5 seconds until the led stays on
+        // now the password is reset to the factory one.
+        long reset_btn_on_time = millis();
+        long reset_wait = millis();
+        byte reset_btn_led = HIGH;
+        byte password_reset_done = false;
+        
         Serial.println("Waiting for password factory reset. Keep the buttons pressed for 5 seconds");
         while (ped_2.read() == 0 && ped_1.read() == 0 && ! password_reset_done ) {
             if( millis() - reset_wait < 5000 ){
@@ -322,50 +296,80 @@ void setup(void)
         }
     }
     
-    /* Web configuration resposnse pages and action */
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send_P(200, "text/html", index_html, processor);
-        lastConfigActivityTime = millis();
-    });
+    if (ped_2.read() == 0 && ped_1.read() != 0 ){
+        Serial.println("Starting WiFI accessPoint...");
+        
+          digitalWrite(STATUS_LED_PIN, LOW); 
+          
+          Serial.println("Setting AP (Access Point)…");
+          ssid = preferences.getString("ssid", SSID_DEFAULT); 
+          password = preferences.getString("password", PASSWORD_DEFAULT);
+          
+          const char *wpassword = password.c_str();
+          const char *wssid = ssid.c_str();
+          
+          WiFi.softAP(wssid, wpassword);
+          
+          IPAddress IP = WiFi.softAPIP();
+          Serial.print("AP IP address: ");
+          Serial.println(IP);
+          Serial.print("AP SSID: ");
+          Serial.println(wssid);
+          Serial.print("AP password: ");
+          Serial.println(wpassword);
+          
+          // Start server
+          server.begin();
+          ap_started = true;
+          lastConfigActivityTime = millis();
+          Serial.println("Access Point Started");
+          
+          /* Web configuration resposnse pages and action */
+          server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+              request->send_P(200, "text/html", index_html, processor);
+              lastConfigActivityTime = millis();
+          });
+          
+          server.on("/end", HTTP_GET, [](AsyncWebServerRequest *request){
+              request->send(200, "text/plain", "Connection closed.");
+              shutDownServer();
+          });
+          
+          server.on("/save", HTTP_GET, [](AsyncWebServerRequest *request){
+              if(request->hasParam("devicename")){
+                  String devicename;
+                  devicename = request->getParam("devicename")->value();
+                  Serial.println("devicename");
+                  Serial.println( devicename );
+                  preferences.putString("ssid", devicename);
+              }
+              if(request->hasParam("password")){
+                  String getpassword;
+                  getpassword = request->getParam("password")->value();
+                  Serial.println("password");
+                  Serial.println( getpassword );
+                  preferences.putString("password", getpassword);
+              }
+              if(request->hasParam("pedal1")){
+                  String pedal1;
+                  pedal1 = request->getParam("pedal1")->value();
+                  Serial.println("pedal1");
+                  Serial.println( pedal1 );
+                  preferences.putInt("pedal1", pedal1.toInt());
+              }
+              if(request->hasParam("pedal2")){
+                  String pedal2;
+                  pedal2 = request->getParam("pedal2")->value();
+                  Serial.println("pedal2");
+                  Serial.println( pedal2 );
+                  preferences.putInt("pedal2", pedal2.toInt());
+          
+              }
+              lastConfigActivityTime = millis();
+              request->send_P(200, "text/html", save_html, processor);
+          });
+    }
     
-    server.on("/end", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(200, "text/plain", "Connection closed.");
-        shutDownServer();
-    });
-
-    server.on("/save", HTTP_GET, [](AsyncWebServerRequest *request){
-        if(request->hasParam("devicename")){
-            String devicename;
-            devicename = request->getParam("devicename")->value();
-            Serial.println("devicename");
-            Serial.println( devicename );
-            preferences.putString("ssid", devicename);
-        }
-        if(request->hasParam("password")){
-            String getpassword;
-            getpassword = request->getParam("password")->value();
-            Serial.println("password");
-            Serial.println( getpassword );
-            preferences.putString("password", getpassword);
-        }
-        if(request->hasParam("pedal1")){
-            String pedal1;
-            pedal1 = request->getParam("pedal1")->value();
-            Serial.println("pedal1");
-            Serial.println( pedal1 );
-            preferences.putInt("pedal1", pedal1.toInt());
-        }
-        if(request->hasParam("pedal2")){
-            String pedal2;
-            pedal2 = request->getParam("pedal2")->value();
-            Serial.println("pedal2");
-            Serial.println( pedal2 );
-            preferences.putInt("pedal2", pedal2.toInt());
-
-        }
-        lastConfigActivityTime = millis();
-        request->send_P(200, "text/html", save_html, processor);
-    });
     
 }
 
@@ -416,15 +420,15 @@ void loop(void)
     }
 
     /* every BAT_POLLING_INTERVAL we check the battery charge */
-    if(  millis() > batCheckTime ){
-        batCheckTime = millis() + BAT_POLLING_INTERVAL;
-        Serial.print("Volts: ");
-        Serial.println(BL.getBatteryVolts());
-        Serial.print("Charge level: ");
-        Serial.println(BL.getBatteryChargeLevel());
-
-        status_led_off_interval = batteryChargeLedOffInterval();
-        bleKeyboard.setBatteryLevel(BL.getBatteryChargeLevel());
-    }
+    // if(  millis() > batCheckTime ){
+    //     batCheckTime = millis() + BAT_POLLING_INTERVAL;
+    //     Serial.print("Volts: ");
+    //     Serial.println(BL.getBatteryVolts());
+    //     Serial.print("Charge level: ");
+    //     Serial.println(BL.getBatteryChargeLevel());
+    // 
+    //     status_led_off_interval = batteryChargeLedOffInterval();
+    //     bleKeyboard.setBatteryLevel(BL.getBatteryChargeLevel());
+    // }
 
 }
