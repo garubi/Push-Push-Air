@@ -4,7 +4,7 @@
     Link: https://github.com/garubi/Push-Push-Air
     Hardware version: 2.0
 */
-const char SoftwareVersion[] = "2.0.0";
+const char SoftwareVersion[] = "2.0.1";
  
 /* Pedals/Buttons connections */
 // Pin per i Pulsanti

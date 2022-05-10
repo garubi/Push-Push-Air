@@ -16,9 +16,9 @@ Configurable via WiFI (you can choose the keystrokes that you want to send)
 - Out of the box PushPushAIR is configured to send the key cursor left and right. Check the app that you want to control and, if it needs different keys, go to the Configuration section and change the keystrokes sent.
 
 ### Configuration ###
-- Turn on the PPA while pushing the right-most pedal.
+- Turn on the PPA while pushing the right-most pedal. Keep the pedal pressed for at least 2 seconds.
 - The status led will be steady blue.
-- Now connect from a computer or mobile device to the wifi network "Push Push AIR" and insert the passord
+- Now connect from a computer or mobile device to the wifi network "Push Push AIR" and insert the password
 - Once the connection is etablished, browse to 192.168.4.1 to use the configuration page.
 - On the configuration page you can set:
  - The device name that idetify the Push Push AIR on WiFI and Bluethooth (you need to restart the device in order to render effective the name's change)
@@ -29,7 +29,7 @@ Configurable via WiFI (you can choose the keystrokes that you want to send)
  - It will save on battery charge
  - No one (even if he has your password) will be able to change the settings during your performance ;-)
  
-Please note that after 5 minutes from the last click un the buttons in the configuration page, the Push Push AIR turns off automatically
+Please note that after 5 minutes from the last click on the buttons in the configuration page, the Push Push AIR WiFi access point will turn off automatically
  
 ### Reset the password to the factory one ###
  If you change the password of the Configuration page and you forget it, you can revert to the factory one: `12345678`
