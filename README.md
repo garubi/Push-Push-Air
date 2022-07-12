@@ -44,8 +44,7 @@ I used a board that have the 18650 battery and charger included like this:
 https://wiki.geekworm.com/index.php/WEMOS_ESP32_Board_with_18650_Battery_Holder
 see References folder for pictures and pinout
  
- 
-Libraries used:
+**Libraries used:**
 ```
 /**
  * for 18650 battery level check
@@ -62,3 +61,11 @@ Libraries used:
  BleKeyboard 0.3.2beta
  Preferences
  Bounce2
+ 
+ **Compiling**
+ in Arduino IDE select the 
+ _WeMos WiFI&Bluethooth Battery_
+ 
+ as Partition Scheme select:
+ _Huge APP (3MB No OTA/1MB SPIFF)
+ 
