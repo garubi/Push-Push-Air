@@ -10,15 +10,15 @@ const char SoftwareVersion[] = "2.0.1";
 // Pin per i Pulsanti
 const byte PEDAL1_PIN = 23;
 const byte PEDAL2_PIN = 21;
-
+const byte LED = 2;
 #include <Bounce2.h>
 Bounce ped_2 = Bounce(); 
 Bounce ped_1 = Bounce(); 
 
 /* Leds connections */
-const byte PEDAL1_LED_PIN = LED_BUILTIN;
-const byte PEDAL2_LED_PIN = LED_BUILTIN;
-const byte STATUS_LED_PIN = LED_BUILTIN;
+const byte PEDAL1_LED_PIN = LED;
+const byte PEDAL2_LED_PIN = LED;
+const byte STATUS_LED_PIN = LED;
 // Manage the status led (it will blink faster as the battery level will go down)
 int status_led_off_interval;
 int status_led_on_interval;
@@ -41,6 +41,7 @@ unsigned long batCheckTime;
 const int BAT_POLLING_INTERVAL = 5000; // Chek the battery status every BAT_POLLING_INTERVAL milliseconds
 // Calculate the the led's blinking frequency based on the battery charge levele
 int batteryChargeLedOffInterval(){
+    return 100*100;
     if( BL.getBatteryChargeLevel() < 1 ){
         return 100;
     }
@@ -420,15 +421,15 @@ void loop(void)
     }
 
     /* every BAT_POLLING_INTERVAL we check the battery charge */
-    // if(  millis() > batCheckTime ){
-    //     batCheckTime = millis() + BAT_POLLING_INTERVAL;
-    //     Serial.print("Volts: ");
-    //     Serial.println(BL.getBatteryVolts());
-    //     Serial.print("Charge level: ");
-    //     Serial.println(BL.getBatteryChargeLevel());
-    // 
-    //     status_led_off_interval = batteryChargeLedOffInterval();
-    //     bleKeyboard.setBatteryLevel(BL.getBatteryChargeLevel());
-    // }
+    if(  millis() > batCheckTime ){
+        batCheckTime = millis() + BAT_POLLING_INTERVAL;
+        Serial.print("Volts: ");
+        Serial.println(BL.getBatteryVolts());
+        Serial.print("Charge level: ");
+        Serial.println(BL.getBatteryChargeLevel());
+    
+        status_led_off_interval = batteryChargeLedOffInterval();
+        bleKeyboard.setBatteryLevel(BL.getBatteryChargeLevel());
+    }
 
 }
