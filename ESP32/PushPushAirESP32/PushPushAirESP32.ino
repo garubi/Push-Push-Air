@@ -17,15 +17,16 @@ The PIN and LED assignement is done in a separate file so this script can be lef
 */
 
 /* code to copy and paste: */
-
+/*
 #define BATTERY_POWERED TRUE // delete if your devices doesn't have a battery
-/* Pedals/Buttons connections */
+
 #define PEDAL1_PIN 23
 #define PEDAL2_PIN 21
-/* Leds connections */
+
 #define PEDAL1_LED_PIN 2 // Blink when pedal/button 1 is pressed
 #define PEDAL2_LED_PIN 2 // Blink when pedal/button 2 is pressed
 #define STATUS_LED_PIN 2 // Blink to signal device's statuses
+*/
 
 /* ****** *************************** ****** */
 
@@ -42,15 +43,15 @@ const char SoftwareVersion[] = "3.0.0";
 
 /* Leds connections */
 #ifndef PEDAL1_LED_PIN
-    #define PEDAL1_LED_PIN 2
+    #define PEDAL1_LED_PIN LED_BUILTIN
 #endif
 
 #ifndef PEDAL2_LED_PIN
-    #define PEDAL1_LED_PIN 2
+    #define PEDAL1_LED_PIN LED_BUILTIN
 #endif
 
 #ifndef STATUS_LED_PIN
-    #define PEDAL1_LED_PIN 2
+    #define PEDAL1_LED_PIN LED_BUILTIN
 #endif
 
 /* Is battery operated? */
