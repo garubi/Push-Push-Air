@@ -4,21 +4,65 @@
     Link: https://github.com/garubi/Push-Push-Air
     Hardware version: 2.0
 */
-const char SoftwareVersion[] = "2.0.1";
- 
+
+#include "customize.h"
+
+/* ****** CUSTOMIZATION INSTRUCTION ****** */
+/*
+The PIN and LED assignement is done in a separate file so this script can be left untouched 
+
+- uncomment the above #include "customize.h"
+- create a customize.h file in the same folder of this script
+- Put the following code in the customize.h file and change it as you need:
+*/
+
+/* code to copy and paste: */
+/*
+#define BATTERY_POWERED TRUE // delete if your devices doesn't have a battery
+
+#define PEDAL1_PIN 23
+#define PEDAL2_PIN 21
+
+#define PEDAL1_LED_PIN 2 // Blink when pedal/button 1 is pressed
+#define PEDAL2_LED_PIN 2 // Blink when pedal/button 2 is pressed
+#define STATUS_LED_PIN 2 // Blink to signal device's statuses
+*/
+
+/* ****** *************************** ****** */
+
+const char SoftwareVersion[] = "3.0.0";
+
 /* Pedals/Buttons connections */
-// Pin per i Pulsanti
-const byte PEDAL1_PIN = 23;
-const byte PEDAL2_PIN = 21;
+#ifndef PEDAL1_PIN
+    #define PEDAL1_PIN 23
+#endif
+
+#ifndef PEDAL2_PIN
+    #define PEDAL2_PIN 21
+#endif
+
+/* Leds connections */
+#ifndef PEDAL1_LED_PIN
+    #define PEDAL1_LED_PIN LED_BUILTIN
+#endif
+
+#ifndef PEDAL2_LED_PIN
+    #define PEDAL1_LED_PIN LED_BUILTIN
+#endif
+
+#ifndef STATUS_LED_PIN
+    #define PEDAL1_LED_PIN LED_BUILTIN
+#endif
+
+/* Is battery operated? */
+#ifndef BATTERY_POWERED
+    #define BATTERY_POWERED TRUE
+#endif
 
 #include <Bounce2.h>
 Bounce ped_2 = Bounce(); 
 Bounce ped_1 = Bounce(); 
 
-/* Leds connections */
-const byte PEDAL1_LED_PIN = LED_BUILTIN;
-const byte PEDAL2_LED_PIN = LED_BUILTIN;
-const byte STATUS_LED_PIN = LED_BUILTIN;
 // Manage the status led (it will blink faster as the battery level will go down)
 int status_led_off_interval;
 int status_led_on_interval;
@@ -41,6 +85,10 @@ unsigned long batCheckTime;
 const int BAT_POLLING_INTERVAL = 5000; // Chek the battery status every BAT_POLLING_INTERVAL milliseconds
 // Calculate the the led's blinking frequency based on the battery charge levele
 int batteryChargeLedOffInterval(){
+    #ifndef BATTERY_POWERED
+        return 100*100;
+    #endif
+
     if( BL.getBatteryChargeLevel() < 1 ){
         return 100;
     }
@@ -53,7 +101,7 @@ String init_bleName = SSID_DEFAULT;
 const char *winit_bleName = init_bleName.c_str();
 BleKeyboard bleKeyboard(winit_bleName, "UBI Stage", BL.getBatteryChargeLevel());
 
-/* The keys we cen send.. */
+/* The keys we can send.. */
 struct Key_options {
     String label; //char can also be a fixed length string like char fruit[16];
     uint8_t value;
@@ -420,15 +468,15 @@ void loop(void)
     }
 
     /* every BAT_POLLING_INTERVAL we check the battery charge */
-    // if(  millis() > batCheckTime ){
-    //     batCheckTime = millis() + BAT_POLLING_INTERVAL;
-    //     Serial.print("Volts: ");
-    //     Serial.println(BL.getBatteryVolts());
-    //     Serial.print("Charge level: ");
-    //     Serial.println(BL.getBatteryChargeLevel());
-    // 
-    //     status_led_off_interval = batteryChargeLedOffInterval();
-    //     bleKeyboard.setBatteryLevel(BL.getBatteryChargeLevel());
-    // }
+    if(  millis() > batCheckTime ){
+        batCheckTime = millis() + BAT_POLLING_INTERVAL;
+        Serial.print("Volts: ");
+        Serial.println(BL.getBatteryVolts());
+        Serial.print("Charge level: ");
+        Serial.println(BL.getBatteryChargeLevel());
+    
+        status_led_off_interval = batteryChargeLedOffInterval();
+        bleKeyboard.setBatteryLevel(BL.getBatteryChargeLevel());
+    }
 
 }
