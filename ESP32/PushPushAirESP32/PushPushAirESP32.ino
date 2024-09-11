@@ -180,9 +180,12 @@ String processor(const String& var){
   }
   if(var == "SELECT_PLACEHODER"){
     String buttons = "";
-    buttons += "<b>Battery level:</b>";
-    buttons.concat(BL.getBatteryChargeLevel());
-    
+    #ifdef BATTERY_POWERED
+        buttons += "<b>Battery level:</b>";
+        buttons.concat(BL.getBatteryChargeLevel());
+    #else
+        buttons += "<em>This device has no battery</em>";
+    #endif
     buttons.concat("<h4>Device Name:</h4><input name=\"devicename\" value=\"");
     buttons.concat(preferences.getString("ssid", SSID_DEFAULT));
     buttons.concat("\" type=\"text\" maxlength=\"15\">");
@@ -467,16 +470,18 @@ void loop(void)
         digitalWrite(PEDAL1_LED_PIN, pedalState );
     }
 
-    /* every BAT_POLLING_INTERVAL we check the battery charge */
-    if(  millis() > batCheckTime ){
-        batCheckTime = millis() + BAT_POLLING_INTERVAL;
-        Serial.print("Volts: ");
-        Serial.println(BL.getBatteryVolts());
-        Serial.print("Charge level: ");
-        Serial.println(BL.getBatteryChargeLevel());
-    
-        status_led_off_interval = batteryChargeLedOffInterval();
-        bleKeyboard.setBatteryLevel(BL.getBatteryChargeLevel());
-    }
+    #ifdef BATTERY_POWERED
+        /* every BAT_POLLING_INTERVAL we check the battery charge */
+        if(  millis() > batCheckTime ){
+            batCheckTime = millis() + BAT_POLLING_INTERVAL;
+            Serial.print("Volts: ");
+            Serial.println(BL.getBatteryVolts());
+            Serial.print("Charge level: ");
+            Serial.println(BL.getBatteryChargeLevel());
+        
+            status_led_off_interval = batteryChargeLedOffInterval();
+            bleKeyboard.setBatteryLevel(BL.getBatteryChargeLevel());
+        }
+    #endif
 
 }
