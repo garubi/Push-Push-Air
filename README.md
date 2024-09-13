@@ -79,6 +79,9 @@ The PIN and LED assignement is done in a separate file, named `customize.h`
 #define PEDAL1_LED_PIN 2 // Blink when pedal/button 1 is pressed
 #define PEDAL2_LED_PIN 2 // Blink when pedal/button 2 is pressed
 #define STATUS_LED_PIN 2 // Blink to signal device's statuses
+/* lEDS behaviour */
+#define LED_ON HIGH
+#define LED_OFF LOW
 ```
 
 

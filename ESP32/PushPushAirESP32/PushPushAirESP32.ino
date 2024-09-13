@@ -26,6 +26,9 @@ The PIN and LED assignement is done in a separate file so this script can be lef
 #define PEDAL1_LED_PIN 2 // Blink when pedal/button 1 is pressed
 #define PEDAL2_LED_PIN 2 // Blink when pedal/button 2 is pressed
 #define STATUS_LED_PIN 2 // Blink to signal device's statuses
+
+#define LED_ON HIGH
+#define LED_OFF LOW
 */
 
 /* ****** *************************** ****** */
@@ -53,6 +56,15 @@ const char SoftwareVersion[] = "3.0.0beta";
 #ifndef STATUS_LED_PIN
     #define PEDAL1_LED_PIN LED_BUILTIN
 #endif
+
+#ifndef LED_ON
+    #define LED_ON LED_ON
+#endif
+
+#ifndef LED_OFF
+    #define LED_OFF HIGH
+#endif
+
 
 /* Is battery operated? */
 #ifndef BATTERY_POWERED
@@ -237,7 +249,7 @@ void shutDownServer(){
     Serial.println("Access Point closed");
     // turn the led off when the Access Point is disconnected
     ap_started = false;
-    digitalWrite(STATUS_LED_PIN, HIGH );
+    digitalWrite(STATUS_LED_PIN, LED_OFF );
 }
 
 /* send the keypress via BLE */
@@ -282,9 +294,9 @@ void setup(void)
 //    Serial.println(ESP.getSdkVersion());
 
     /* At startup, the led will be on for 1 second */
-    digitalWrite(STATUS_LED_PIN, LOW);
+    digitalWrite(STATUS_LED_PIN, LED_ON);
     delay(1000);
-    digitalWrite(STATUS_LED_PIN, HIGH);
+    digitalWrite(STATUS_LED_PIN, LED_OFF);
     
     Serial.println("Welcome to PushPushAir2");
     Serial.print("Firmware version: ");
@@ -303,7 +315,7 @@ void setup(void)
     #endif
 
     status_led_on_interval = 200;
-    status_led_flag = LOW;
+    status_led_flag = LED_ON;
     
     // start the access point to do the configuration when the device is started while pushing pedal 2
     ped_1.update();
@@ -324,7 +336,7 @@ void setup(void)
         // now the password is reset to the factory one.
         long reset_btn_on_time = millis();
         long reset_wait = millis();
-        byte reset_btn_led = HIGH;
+        byte reset_btn_led = LED_OFF;
         byte password_reset_done = false;
         
         Serial.println("Waiting for password factory reset. Keep the buttons pressed for 5 seconds");
@@ -338,7 +350,7 @@ void setup(void)
                 }
             }
             else{
-                digitalWrite(STATUS_LED_PIN, HIGH); //keep the led on to signal that the reset procedure is starting
+                digitalWrite(STATUS_LED_PIN, LED_ON); //keep the led on to signal that the reset procedure is starting
                 Serial.println("Reset passowrd to");
                 Serial.println(PASSWORD_DEFAULT);
                 String rpassword = PASSWORD_DEFAULT;
@@ -347,7 +359,7 @@ void setup(void)
                 delay(2000);
                 Serial.println("Password reset done");
                 password_reset_done = true; 
-                digitalWrite(STATUS_LED_PIN, LOW);
+                digitalWrite(STATUS_LED_PIN, LED_OFF);
             }
             ped_1.update();
             ped_2.update();
@@ -357,7 +369,7 @@ void setup(void)
     if (ped_2.read() == 0 && ped_1.read() != 0 ){
         Serial.println("Starting WiFI accessPoint...");
         
-          digitalWrite(STATUS_LED_PIN, LOW); 
+          digitalWrite(STATUS_LED_PIN, LED_ON); 
           
           Serial.println("Setting AP (Access Point)…");
           ssid = preferences.getString("ssid", SSID_DEFAULT); 
@@ -434,19 +446,19 @@ void setup(void)
 void loop(void)
 {
     if( ap_started != true ){ // we are not in config mode.
-        if(status_led_flag == HIGH && millis() > status_led_change_time ){
+        if(status_led_flag == LED_OFF && millis() > status_led_change_time ){
           status_led_change_time = millis() + status_led_on_interval;
-          status_led_flag = LOW;
+          status_led_flag = LED_ON;
           digitalWrite(STATUS_LED_PIN, status_led_flag );
         }
-        if(status_led_flag == LOW && millis() > status_led_change_time ){
+        if(status_led_flag == LED_ON && millis() > status_led_change_time ){
           status_led_change_time = millis() + status_led_off_interval;
-          status_led_flag = HIGH;
+          status_led_flag = LED_OFF;
           digitalWrite(STATUS_LED_PIN, status_led_flag );
         }
     }
     else{
-        digitalWrite(STATUS_LED_PIN, LOW );
+        digitalWrite(STATUS_LED_PIN, LED_ON );
         if(millis() - lastConfigActivityTime > CONFIG_MAX_IDLE_TIME ){
             // we are on the same WebConfig page for more than CONFIG_MAX_IDLE_TIME
             // so we shut down the server
@@ -461,7 +473,7 @@ void loop(void)
     ped_1.update();
     if ( ped_2.changed() ) { 
         pedalState = ped_2.read();
-        if (pedalState == LOW ) {
+        if (pedalState == LED_ON ) {
           Serial.print("Pushed pedal 2");
           SendKey( PEDAL2_PIN );
         }
@@ -470,7 +482,7 @@ void loop(void)
 
     if ( ped_1.changed() ) { 
         pedalState = ped_1.read();
-        if (pedalState == LOW ) {
+        if (pedalState == LED_ON ) {
             Serial.print("Pushed pedal 1");
             SendKey( PEDAL1_PIN );
         }
