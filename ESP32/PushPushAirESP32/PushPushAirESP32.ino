@@ -18,7 +18,7 @@ The PIN and LED assignement is done in a separate file so this script can be lef
 
 /* code to copy and paste: */
 /*
-#define BATTERY_POWERED FALSE // set to FALSE if your devices doesn't have a battery otherwise omit it or set tu TRUE
+#define BATTERY_POWERED false // set to false if your devices doesn't have a battery otherwise omit it or set to true
 
 #define PEDAL1_PIN 23
 #define PEDAL2_PIN 21
@@ -56,7 +56,7 @@ const char SoftwareVersion[] = "3.0.0beta";
 
 /* Is battery operated? */
 #ifndef BATTERY_POWERED
-    #define BATTERY_POWERED TRUE
+    #define BATTERY_POWERED true
 #endif
 
 #include <Bounce2.h>
