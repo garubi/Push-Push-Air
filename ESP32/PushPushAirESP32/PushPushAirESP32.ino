@@ -18,7 +18,7 @@ The PIN and LED assignement is done in a separate file so this script can be lef
 
 /* code to copy and paste: */
 /*
-#define BATTERY_POWERED TRUE // delete if your devices doesn't have a battery
+#define BATTERY_POWERED FALSE // set to FALSE if your devices doesn't have a battery otherwise omit it or set tu TRUE
 
 #define PEDAL1_PIN 23
 #define PEDAL2_PIN 21
@@ -56,7 +56,7 @@ const char SoftwareVersion[] = "3.0.0beta";
 
 /* Is battery operated? */
 #ifndef BATTERY_POWERED
-    #define BATTERY_POWERED 1
+    #define BATTERY_POWERED TRUE
 #endif
 
 #include <Bounce2.h>
@@ -79,27 +79,29 @@ const String PASSWORD_DEFAULT = "12345678";
 const String SSID_DEFAULT = "PushPushAIR2";
 
 /* Battery charge checking */
-#include <Pangodream_18650_CL.h>
-Pangodream_18650_CL BL;
-unsigned long batCheckTime;
-const int BAT_POLLING_INTERVAL = 5000; // Chek the battery status every BAT_POLLING_INTERVAL milliseconds
-// Calculate the the led's blinking frequency based on the battery charge levele
-int batteryChargeLedOffInterval(){
-    #if BATTERY_POWERED
-        if( BL.getBatteryChargeLevel() < 1 ){
-            return 100;
-        }
-        return 100 * BL.getBatteryChargeLevel();
-    #else
-        return 100*100;
-    #endif
-}
+#if BATTERY_POWERED
+    #include <Pangodream_18650_CL.h>
+    Pangodream_18650_CL BL;
+    unsigned long batCheckTime;
+    const int BAT_POLLING_INTERVAL = 5000; // Chek the battery status every BAT_POLLING_INTERVAL milliseconds
+    // Calculate the the led's blinking frequency based on the battery charge levele
+    int batteryChargeLedOffInterval(){
+            if( BL.getBatteryChargeLevel() < 1 ){
+                return 100;
+            }
+            return 100 * BL.getBatteryChargeLevel();
+    }
+#endif
 
 /* The device's will appear as a Bluethooth keyboard */
 #include <BleKeyboard.h>
 String init_bleName = SSID_DEFAULT;
 const char *winit_bleName = init_bleName.c_str();
-BleKeyboard bleKeyboard(winit_bleName, "UBI Stage", BL.getBatteryChargeLevel());
+#if BATTERY_POWERED
+    BleKeyboard bleKeyboard(winit_bleName, "UBI Stage", BL.getBatteryChargeLevel());
+#else
+    BleKeyboard bleKeyboard(winit_bleName, "UBI Stage" );
+#endif
 
 /* The keys we can send.. */
 struct Key_options {
@@ -294,7 +296,12 @@ void setup(void)
     Serial.print("Password: ");
     Serial.println(preferences.getString("password", PASSWORD_DEFAULT));
     
-    status_led_off_interval = batteryChargeLedOffInterval();
+    #if BATTERY_POWERED
+        status_led_off_interval = batteryChargeLedOffInterval();
+    #else
+        status_led_off_interval = 100*100;
+    #endif
+
     status_led_on_interval = 200;
     status_led_flag = LOW;
     

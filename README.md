@@ -71,7 +71,7 @@ The PIN and LED assignement is done in a separate file, named `customize.h`
 
 ```C++
 
-#define BATTERY_POWERED TRUE // delete if your devices doesn't have a battery
+#define BATTERY_POWERED FALSE // set to FALSE if your devices doesn't have a battery otherwise omit it or set tu TRUE
 /* Pedals/Buttons connections */
 #define PEDAL1_PIN 23
 #define PEDAL2_PIN 21
