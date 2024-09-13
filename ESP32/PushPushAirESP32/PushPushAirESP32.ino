@@ -56,7 +56,7 @@ const char SoftwareVersion[] = "3.0.0beta";
 
 /* Is battery operated? */
 #ifndef BATTERY_POWERED
-    #define BATTERY_POWERED TRUE
+    #define BATTERY_POWERED 1
 #endif
 
 #include <Bounce2.h>
@@ -85,14 +85,14 @@ unsigned long batCheckTime;
 const int BAT_POLLING_INTERVAL = 5000; // Chek the battery status every BAT_POLLING_INTERVAL milliseconds
 // Calculate the the led's blinking frequency based on the battery charge levele
 int batteryChargeLedOffInterval(){
-    #ifndef BATTERY_POWERED
+    #if BATTERY_POWERED
+        if( BL.getBatteryChargeLevel() < 1 ){
+            return 100;
+        }
+        return 100 * BL.getBatteryChargeLevel();
+    #else
         return 100*100;
     #endif
-
-    if( BL.getBatteryChargeLevel() < 1 ){
-        return 100;
-    }
-    return 100 * BL.getBatteryChargeLevel();
 }
 
 /* The device's will appear as a Bluethooth keyboard */
@@ -180,7 +180,7 @@ String processor(const String& var){
   }
   if(var == "SELECT_PLACEHODER"){
     String buttons = "";
-    #ifdef BATTERY_POWERED
+    #if BATTERY_POWERED
         buttons += "<b>Battery level:</b>";
         buttons.concat(BL.getBatteryChargeLevel());
     #else
@@ -470,7 +470,7 @@ void loop(void)
         digitalWrite(PEDAL1_LED_PIN, pedalState );
     }
 
-    #ifdef BATTERY_POWERED
+    #if BATTERY_POWERED
         /* every BAT_POLLING_INTERVAL we check the battery charge */
         if(  millis() > batCheckTime ){
             batCheckTime = millis() + BAT_POLLING_INTERVAL;
