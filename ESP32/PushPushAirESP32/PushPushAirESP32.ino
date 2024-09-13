@@ -33,7 +33,7 @@ The PIN and LED assignement is done in a separate file so this script can be lef
 
 /* ****** *************************** ****** */
 
-const char SoftwareVersion[] = "3.0.0beta";
+const char SoftwareVersion[] = "3.0.0";
 
 /* Pedals/Buttons connections */
 #ifndef PEDAL1_PIN
